@@ -4,6 +4,12 @@ const { keccak256 } = require("ethereum-cryptography/keccak");
 const secp256k1 = require("ethereum-cryptography/secp256k1");
 const { bytesToHex, hexToBytes } = require("ethereum-cryptography/utils");
 const RLP = require("@ethereumjs/rlp");
+// app.js  
+const {
+  parseSignedTransaction,
+  getTransactionSummary,
+  getTransactionSender
+} = require('../scripts/utils/transactionParser');
 
 describe("Send Legacy Raw Transaction", function () {
 
@@ -80,6 +86,8 @@ describe("Send Legacy Raw Transaction", function () {
     const sentTxHash = await provider.send("eth_sendRawTransaction", [signedTx]);
     console.log(" ### ===> txHash", txHash);
     console.log("交易已发送，哈希:", sentTxHash);
+
+    parseSignedTransaction(signedTx)
 
     // 等待交易确认  
     const receipt = await provider.waitForTransaction(sentTxHash);
@@ -186,7 +194,8 @@ function signLegacyTransaction(txData, privateKey) {
   // 8. Legacy交易不需要类型前缀  
   const signedTx = "0x" + bytesToHex(signedRlpEncoded);
 
-  const txHash1 = keccak256(Buffer.from(signedRlpEncoded));
+  const txHash1 = keccak256(Buffer.from
+    (signedRlpEncoded));
 
   return {
     signedTx,
@@ -283,4 +292,4 @@ function toRlpHex(value) {
     }
     return `0x${value.toString()}`;
   }
-}  
+}

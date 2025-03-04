@@ -5,6 +5,9 @@ const secp256k1 = require("ethereum-cryptography/secp256k1");
 const { bytesToHex, hexToBytes } = require("ethereum-cryptography/utils");
 const RLP = require("@ethereumjs/rlp");
 
+// EIP-2930 交易结构
+// 0x01 || rlp([chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, signatureYParity, signatureR, signatureS])
+
 describe("Send EIP-2930 Raw Transaction", function () {
 
     // 存储部署后的合约地址  
@@ -121,6 +124,7 @@ function createAndSignEIP2930Transaction(chainId, nonce, feeData, gasLimit, from
  * 创建EIP-2930交易对象  
  */
 function createEIP2930Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, accessList) {
+    // 0x01 || rlp([chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, signatureYParity, signatureR, signatureS])
     return {
         type: 1, // EIP-2930交易类型  
         chainId: chainId,
@@ -159,6 +163,7 @@ function signEIP2930Transaction(txData, privateKey) {
     // 计算v值 - EIP-2930的v值就是恢复ID (0或1)  
     const v = "0x" + signature.recid.toString(16);
 
+    // 0x01 || rlp([chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, signatureYParity, signatureR, signatureS])
     // 6. 构建包含签名的完整交易字段  
     const signedFields = [
         toRlpHex(txData.chainId),
@@ -179,7 +184,6 @@ function signEIP2930Transaction(txData, privateKey) {
 
     // 8. 添加EIP-2930交易类型前缀 (0x01)  
     const signedTx = "0x01" + bytesToHex(signedRlpEncoded);
-
     // 9. 计算最终交易哈希 (交易ID)  
     const finalTxHash = keccak256(Buffer.from("0x01" + bytesToHex(signedRlpEncoded), 'hex'));
 
