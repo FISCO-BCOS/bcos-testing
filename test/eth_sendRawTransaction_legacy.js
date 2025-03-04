@@ -87,6 +87,7 @@ describe("Send Legacy Raw Transaction", function () {
     console.log(" ### ===> txHash", txHash);
     console.log("交易已发送，哈希:", sentTxHash);
 
+    console.log(" ### ===> signedTx", signedTx);
     parseSignedTransaction(signedTx)
 
     // 等待交易确认  

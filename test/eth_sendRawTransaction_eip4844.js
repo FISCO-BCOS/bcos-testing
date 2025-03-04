@@ -5,6 +5,12 @@ const secp256k1 = require("ethereum-cryptography/secp256k1");
 const { bytesToHex, hexToBytes } = require("ethereum-cryptography/utils");
 const RLP = require("@ethereumjs/rlp");
 
+const {
+    parseSignedTransaction,
+    getTransactionSummary,
+    getTransactionSender
+} = require('../scripts/utils/transactionParser');
+
 describe("Send EIP-4844 Blob Transaction", function () {
 
     // 存储部署后的合约地址  
@@ -67,6 +73,9 @@ describe("Send EIP-4844 Blob Transaction", function () {
         // maxFeePerBlobGas估算 - 实际应用中应通过eth_blobBaseFee等API获取  
         const maxFeePerBlobGas = ethers.parseUnits("10", "gwei");
 
+        // 获取合约字节码  
+        const bytecode = contractArtifact.bytecode;
+
         // 创建并签名EIP-4844交易  
         const { signedTx, txHash } = createAndSignEIP4844Transaction(
             chainId,
@@ -75,16 +84,20 @@ describe("Send EIP-4844 Blob Transaction", function () {
             gasLimit,
             wallet.address,
             wallet.address, // 发送给自己，作为示例  
-            "0.001",   // 发送少量ETH  
-            "0x", // 无调用数据  
+            "0.000",   // 发送少量ETH  
+            bytecode,
             [], // 空的accessList  
             maxFeePerBlobGas,
-            mockBlobVersionedHashes,
+            [],
             privateKey
         );
 
         console.log(" ### ===> 构建的EIP-4844交易:", signedTx);
         console.log(" ### ===> 计算的哈希:", txHash);
+
+        console.log(" ### ===> signedTx", signedTx);
+        const parsedTx = parseSignedTransaction(signedTx)
+        console.log(" ### ===> parsedTx", parsedTx);
 
         // 注意：在不支持EIP-4844的网络上，此调用将失败  
         try {
@@ -95,7 +108,7 @@ describe("Send EIP-4844 Blob Transaction", function () {
             const receipt = await provider.waitForTransaction(sentTxHash);
             console.log(" ### ===> receipt", receipt);
         } catch (error) {
-            console.log("发送交易失败 (可能网络不支持EIP-4844):", error.message);
+            console.log("发送交易失败:", error.message);
             // 预期失败时，仍然视为测试通过  
         }
     });
@@ -201,6 +214,8 @@ function signEIP4844Transaction(txData, privateKey) {
     // 对于EIP-4844，v值就是恢复ID (0或1)  
     const v = "0x" + signature.recid.toString(16);
 
+    console.log(" ### ===> txData", txData);
+
     // 6. 构建包含签名的完整交易字段  
     const signedFields = [
         toRlpHex(txData.chainId),
@@ -213,7 +228,7 @@ function signEIP4844Transaction(txData, privateKey) {
         txData.data || "0x",
         encodeAccessList(txData.accessList),
         toRlpHex(txData.maxFeePerBlobGas),
-        encodeBlobVersionedHashes(txData.blobVersionedHashes), // 修改的部分：特殊处理blobVersionedHashes  
+        encodeBlobVersionedHashes(txData.blobVersionedHashes),
         v,
         r,
         s
@@ -221,6 +236,8 @@ function signEIP4844Transaction(txData, privateKey) {
 
     // 7. RLP编码签名后的交易  
     const signedRlpEncoded = RLP.encode(signedFields);
+
+    console.log(" ### ===> signedRlpEncoded", signedRlpEncoded);
 
     // 8. 添加EIP-4844交易类型前缀 (0x03)  
     const signedTx = "0x03" + bytesToHex(signedRlpEncoded);
@@ -244,6 +261,11 @@ function signEIP4844Transaction(txData, privateKey) {
 function encodeEIP4844Transaction(txData) {
     // EIP-4844交易的字段顺序:   
     // [chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data, accessList, maxFeePerBlobGas, blobVersionedHashes]  
+
+    if (txData.type !== 3) {
+        throw new Error("Not EIP-4844 transaction type, type: " + txData.type);
+    }
+
     const fields = [
         toRlpHex(txData.chainId),
         toRlpHex(txData.nonce),
@@ -296,22 +318,20 @@ function encodeEIP4844Transaction(txData) {
  * @returns {Array} 处理后的数组，适合RLP编码  
  */
 function encodeBlobVersionedHashes(blobVersionedHashes) {
+    // 确保始终返回数组，即使是空数组  
     if (!blobVersionedHashes || blobVersionedHashes.length === 0) {
-        return [];
+        return []; // 空数组是合法的，表示没有blob  
     }
 
-    // 将每个哈希转换为二进制格式  
+    // 确保每个哈希都是正确的格式  
     return blobVersionedHashes.map(hash => {
-        // 移除0x前缀，并转换为Buffer  
-        if (typeof hash === 'string' && hash.startsWith('0x')) {
-            return Buffer.from(hash.slice(2), 'hex');
+        if (typeof hash === 'string') {
+            // 移除0x前缀  
+            const hexString = hash.startsWith('0x') ? hash.slice(2) : hash;
+            return Buffer.from(hexString, 'hex');
         }
-        // 如果已经是Buffer，直接返回  
-        if (Buffer.isBuffer(hash)) {
-            return hash;
-        }
-        // 其他情况，尝试转换为Buffer  
-        return Buffer.from(hash, 'hex');
+        // 已经是Buffer就直接返回  
+        return hash;
     });
 }
 
@@ -326,20 +346,8 @@ function encodeAccessList(accessList) {
 
     return accessList.map(item => {
         return [
-            // 确保地址是没有0x前缀的Buffer或者是带0x前缀的字符串  
-            typeof item.address === 'string' && item.address.startsWith('0x')
-                ? item.address
-                : Buffer.from(item.address, 'hex'),
-
-            // 存储键需要是Buffer数组  
-            (item.storageKeys || []).map(key => {
-                // 如果key是带0x前缀的字符串，移除前缀并转换为Buffer  
-                if (typeof key === 'string' && key.startsWith('0x')) {
-                    return Buffer.from(key.slice(2), 'hex');
-                }
-                // 其他情况尝试直接转换  
-                return Buffer.from(key, 'hex');
-            })
+            item.address,
+            item.storageKeys || []
         ];
     });
 }

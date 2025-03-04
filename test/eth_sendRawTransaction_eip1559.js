@@ -111,7 +111,7 @@ describe("Send EIP-1559 Raw Transaction", function () {
     console.log(" ### ===> txHash", txHash);
     console.log("交易已发送，哈希:", sentTxHash);
 
-    // console.log(" ### ===> signedTx", signedTx);
+    console.log(" ### ===> signedTx", signedTx);
     // 4. 等待交易确认
     const receipt = await provider.waitForTransaction(sentTxHash);
     console.log(" ### ===> receipt", receipt);
