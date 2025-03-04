@@ -147,7 +147,7 @@ function signLegacyTransaction(txData, privateKey) {
   // 1. 编码交易  
   const { rlpEncoded, fields } = encodeLegacyTransaction(txData);
 
-  console.log(" ### ===> rlpEncoded", rlpEncoded);
+  // console.log(" ### ===> rlpEncoded", rlpEncoded);
 
   // 2. 计算交易哈希  
   const txHash = keccak256(Buffer.from(rlpEncoded));
@@ -186,12 +186,14 @@ function signLegacyTransaction(txData, privateKey) {
   // 8. Legacy交易不需要类型前缀  
   const signedTx = "0x" + bytesToHex(signedRlpEncoded);
 
+  const txHash1 = keccak256(Buffer.from(signedRlpEncoded));
+
   return {
     signedTx,
     r,
     s,
     v,
-    txHash: "0x" + bytesToHex(txHash),
+    txHash: "0x" + bytesToHex(txHash1),
     encodedFields: signedFields
   };
 }
