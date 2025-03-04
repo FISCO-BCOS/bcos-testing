@@ -57,6 +57,7 @@ describe("Send EIP-1559 Raw Transaction", function () {
 
     // 获取合约字节码
     const bytecode = contractArtifact.bytecode;
+
     // 创建合约ABI接口
     // const contractInterface = new ethers.Interface(contractArtifact.abi);
 
@@ -340,7 +341,7 @@ function signEIP1559Transaction(txData, privateKey) {
 }
 
 /**
- * 修正后的编码EIP-1559交易函数
+ * RLP编码EIP-1559交易函数
  */
 function encodeEIP1559Transaction(txData) {
   // 验证是否为EIP-1559交易
@@ -362,7 +363,7 @@ function encodeEIP1559Transaction(txData) {
   ];
 
   // 打印每个字段，用于调试
-  console.debug("EIP-1559 Transaction Fields:", {
+  console.log("EIP-1559 Transaction Fields:", {
     chainId: fields[0],
     nonce: fields[1],
     maxPriorityFeePerGas: fields[2],
