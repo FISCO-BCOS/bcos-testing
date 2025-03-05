@@ -30,7 +30,7 @@ describe("Send EIP-4844 Blob Transaction", function () {
         console.log("编译合约...");
         await run("compile");
 
-        const contractName = "BlockTxProperties";
+        const contractName = "Empty";
 
         // 加载编译后的合约构件  
         contractArtifact = require(`${config.paths.artifacts}/contracts/${contractName}.sol/${contractName}.json`);
