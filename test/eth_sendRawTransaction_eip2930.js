@@ -65,7 +65,7 @@ describe("Send EIP-2930 Raw Transaction", function () {
         const nonce = await provider.getTransactionCount(wallet.address);
         const feeData = await provider.getFeeData();
 
-        let gasLimit = 220000n; // 为合约部署设置合适的gas限制  
+        let gasLimit = 22000000n; // 为合约部署设置合适的gas限制  
 
         const { signedTx, txHash } = createAndSignEIP2930Transaction(
             chainId,
@@ -166,12 +166,12 @@ function signEIP2930Transaction(txData, privateKey) {
     // 0x01 || rlp([chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, signatureYParity, signatureR, signatureS])
     // 6. 构建包含签名的完整交易字段  
     const signedFields = [
-        toRlpHex(txData.chainId),
-        toRlpHex(txData.nonce),
-        toRlpHex(txData.gasPrice),
-        toRlpHex(txData.gasLimit),
+        txData.chainId,
+        txData.nonce,
+        txData.gasPrice,
+        txData.gasLimit,
         txData.to || "0x",
-        toRlpHex(txData.value),
+        txData.value,
         txData.data || "0x",
         encodeAccessList(txData.accessList),
         v,
@@ -203,12 +203,12 @@ function signEIP2930Transaction(txData, privateKey) {
 function encodeEIP2930Transaction(txData) {
     // EIP-2930交易的字段顺序: [chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, v, r, s]  
     const fields = [
-        toRlpHex(txData.chainId),
-        toRlpHex(txData.nonce),
-        toRlpHex(txData.gasPrice),
-        toRlpHex(txData.gasLimit),
+        txData.chainId,
+        txData.nonce,
+        txData.gasPrice,
+        txData.gasLimit,
         txData.to || "0x",
-        toRlpHex(txData.value),
+        txData.value,
         txData.data || "0x",
         encodeAccessList(txData.accessList)
     ];
@@ -258,52 +258,3 @@ function encodeAccessList(accessList) {
         ];
     });
 }
-
-/**  
-* 辅助函数：正确格式化十六进制值，去除不必要的前导零  
-* @param {any} value - 要转换的值  
-* @returns {string} RLP格式的十六进制值  
-*/
-function toRlpHex(value) {
-    // 处理空值或零值  
-    if (value === undefined || value === null) {
-        return '0x';
-    }
-
-    if (value === '0x' || value === 0 || value === '0' || value === '0x0' || value === '0x00') {
-        return '0x';
-    }
-
-    // 转换为BigInt处理数值(能处理数字和十六进制字符串)  
-    let bigIntValue;
-    try {
-        if (typeof value === 'string' && value.startsWith('0x')) {
-            bigIntValue = BigInt(value);
-        } else if (typeof value === 'number' || typeof value === 'bigint') {
-            bigIntValue = BigInt(value);
-        } else {
-            // 非数值类型的字符串，直接添加0x前缀返回  
-            return value.startsWith('0x') ? value : `0x${value}`;
-        }
-
-        // 如果值为0，返回0x  
-        if (bigIntValue === 0n) {
-            return '0x';
-        }
-
-        // 转换为十六进制并去除前导零  
-        let hexValue = bigIntValue.toString(16);
-
-        // 确保没有前导零  
-        hexValue = hexValue.replace(/^0+/, '');
-
-        return `0x${hexValue}`;
-    } catch (e) {
-        // 处理错误情况，返回原始值加前缀  
-        console.warn(`无法将 ${value} 转换为BigInt: ${e.message}`);
-        if (typeof value === 'string') {
-            return value.startsWith('0x') ? value : `0x${value}`;
-        }
-        return `0x${value.toString()}`;
-    }
-}  

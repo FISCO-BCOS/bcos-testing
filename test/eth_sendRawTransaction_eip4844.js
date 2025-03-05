@@ -218,16 +218,16 @@ function signEIP4844Transaction(txData, privateKey) {
 
     // 6. 构建包含签名的完整交易字段  
     const signedFields = [
-        toRlpHex(txData.chainId),
-        toRlpHex(txData.nonce),
-        toRlpHex(txData.maxPriorityFeePerGas),
-        toRlpHex(txData.maxFeePerGas),
-        toRlpHex(txData.gasLimit),
+        txData.chainId,
+        txData.nonce,
+        txData.maxPriorityFeePerGas,
+        txData.maxFeePerGas,
+        txData.gasLimit,
         txData.to || "0x",
-        toRlpHex(txData.value),
+        txData.value,
         txData.data || "0x",
         encodeAccessList(txData.accessList),
-        toRlpHex(txData.maxFeePerBlobGas),
+        txData.maxFeePerBlobGas,
         encodeBlobVersionedHashes(txData.blobVersionedHashes),
         v,
         r,
@@ -267,16 +267,16 @@ function encodeEIP4844Transaction(txData) {
     }
 
     const fields = [
-        toRlpHex(txData.chainId),
-        toRlpHex(txData.nonce),
-        toRlpHex(txData.maxPriorityFeePerGas),
-        toRlpHex(txData.maxFeePerGas),
-        toRlpHex(txData.gasLimit),
+        txData.chainId,
+        txData.nonce,
+        txData.maxPriorityFeePerGas,
+        txData.maxFeePerGas,
+        txData.gasLimit,
         txData.to || "0x",
-        toRlpHex(txData.value),
+        txData.value,
         txData.data || "0x",
         encodeAccessList(txData.accessList),
-        toRlpHex(txData.maxFeePerBlobGas),
+        txData.maxFeePerBlobGas,
         encodeBlobVersionedHashes(txData.blobVersionedHashes) // 修改的部分：特殊处理blobVersionedHashes  
     ];
 
@@ -351,55 +351,3 @@ function encodeAccessList(accessList) {
         ];
     });
 }
-
-/**  
-* 辅助函数：正确格式化十六进制值，去除不必要的前导零  
-* @param {any} value - 要转换的值  
-* @returns {string|Buffer} RLP格式的值  
-*/
-function toRlpHex(value) {
-    // 处理空值或零值  
-    if (value === undefined || value === null) {
-        return Buffer.from([]);
-    }
-
-    if (value === '0x' || value === 0 || value === '0' || value === '0x0' || value === '0x00') {
-        return Buffer.from([]);
-    }
-
-    // 如果是BigInt，转换为Buffer  
-    if (typeof value === 'bigint') {
-        // 转换为十六进制并去除前导零  
-        let hexValue = value.toString(16);
-
-        // 确保偶数长度  
-        if (hexValue.length % 2 !== 0) {
-            hexValue = '0' + hexValue;
-        }
-
-        return Buffer.from(hexValue, 'hex');
-    }
-
-    // 如果是十六进制字符串，转换为Buffer  
-    if (typeof value === 'string' && value.startsWith('0x')) {
-        const hex = value.slice(2); // 移除0x前缀  
-        // 空字符串处理  
-        if (hex === '') {
-            return Buffer.from([]);
-        }
-
-        // 确保偶数长度  
-        const paddedHex = hex.length % 2 === 0 ? hex : '0' + hex;
-        return Buffer.from(paddedHex, 'hex');
-    }
-
-    // 其他情况，尝试转换为Buffer  
-    try {
-        const num = BigInt(value);
-        return toRlpHex(num); // 递归调用，以BigInt方式处理  
-    } catch (e) {
-        console.warn(`无法将 ${value} 转换为适合RLP的格式: ${e.message}`);
-        // 返回空Buffer作为fallback  
-        return Buffer.from([]);
-    }
-}  
