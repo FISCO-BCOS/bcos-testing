@@ -25,7 +25,7 @@ describe("Send EIP-1559 Raw Transaction", function () {
     console.log("编译Lock合约...");
     await run("compile");
 
-    const contractName = "Empty";
+    const contractName = "BlockTxProperties";
 
     // 加载编译后的合约构件
     contractArtifact = require(`${config.paths.artifacts}/contracts/${contractName}.sol/${contractName}.json`);
