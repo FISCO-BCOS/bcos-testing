@@ -1,9 +1,10 @@
 const { run, network, config } = require("hardhat")
 const { ethers } = require("ethers");
-const { keccak256 } = require("ethereum-cryptography/keccak");
+const { keccak256, signature } = require("ethereum-cryptography/keccak");
 const secp256k1 = require("ethereum-cryptography/secp256k1");
 const { bytesToHex, hexToBytes } = require("ethereum-cryptography/utils");
 const RLP = require("@ethereumjs/rlp");
+const BN = require('bn.js');
 
 // EIP-2930 交易结构
 // 0x01 || rlp([chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, signatureYParity, signatureR, signatureS])
@@ -23,7 +24,7 @@ describe("Send EIP-2930 Raw Transaction", function () {
 
     before(async function () {
 
-        console.log(" ### ===> network", network);
+        // console.log(" ### ===> network", network);
         // 编译合约  
         console.log("编译合约...");
         await run("compile");
@@ -82,7 +83,8 @@ describe("Send EIP-2930 Raw Transaction", function () {
 
         // 发送交易  
         const sentTxHash = await provider.send("eth_sendRawTransaction", [signedTx]);
-        console.log(" ### ===> txHash", txHash);
+
+        console.log(" 签名的交易 ### ===> signedTx", signedTx);
         console.log("交易已发送，哈希:", sentTxHash);
 
         // 等待交易确认  
@@ -129,7 +131,7 @@ function createEIP2930Transaction(chainId, nonce, feeData, gasLimit, from, to, v
         type: 1, // EIP-2930交易类型  
         chainId: chainId,
         nonce: nonce,
-        gasPrice: feeData.gasPrice || ethers.parseUnits("30", "gwei"), // 使用gasPrice  
+        gasPrice: feeData.gasPrice || ethers.parseUnits("0.00000003", "gwei"), // 使用gasPrice  
         gasLimit: gasLimit,
         to: to, // 对于部署，这将是null  
         value: ethers.parseEther(value),
@@ -154,14 +156,22 @@ function signEIP2930Transaction(txData, privateKey) {
         : hexToBytes(privateKey);
 
     // 4. 使用私钥签名交易哈希  
-    const signature = secp256k1.ecdsaSign(txHash, privKeyBytes);
+    const sig = secp256k1.ecdsaSign(txHash, privKeyBytes);
+
+    console.log(" ### ===> sig", sig);
 
     // 5. 从签名中提取r, s, v  
-    const r = "0x" + bytesToHex(signature.signature.slice(0, 32));
-    const s = "0x" + bytesToHex(signature.signature.slice(32, 64));
+    const r = "0x" + bytesToHex(sig.signature.slice(0, 32));
+    const s = "0x" + bytesToHex(sig.signature.slice(32, 64));
 
-    // 计算v值 - EIP-2930的v值就是恢复ID (0或1)  
-    const v = "0x" + signature.recid.toString(16);
+    // 计算 v 值 - EIP-2930 和 EIP-155 兼容  
+    // 确保 v 是十六进制表示  
+    // const v = "0x" + vi.toString(16);
+
+    // 7. 计算 v 值 (对于 EIP-2930 必须是 0 或 1)  
+    const v = "0x" + sig.recid.toString(16);
+
+    console.log(" ### ===> signature.recid", sig.recid);
 
     // 0x01 || rlp([chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, signatureYParity, signatureR, signatureS])
     // 6. 构建包含签名的完整交易字段  

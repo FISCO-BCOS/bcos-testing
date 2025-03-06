@@ -5,5 +5,13 @@ pragma solidity ^0.8.28;
 // import "hardhat/console.sol";
 
 contract Empty {
-    constructor() {}
+    event EmptyEvent();
+
+    constructor() {
+        emit EmptyEvent();
+    }
+
+    function emitEvent() public {
+        emit EmptyEvent();
+    }
 }

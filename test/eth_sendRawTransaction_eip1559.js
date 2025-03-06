@@ -20,7 +20,7 @@ describe("Send EIP-1559 Raw Transaction", function () {
 
   before(async function () {
 
-    console.log(" ### ===> network", network);
+    // console.log(" ### ===> network", network);
     // 编译合约
     console.log("编译Lock合约...");
     await run("compile");
@@ -47,6 +47,7 @@ describe("Send EIP-1559 Raw Transaction", function () {
     privateKey = network.config.accounts[0] || tempPrivateKey;
 
     wallet = new ethers.Wallet(privateKey, provider);
+    console.log(" ### ===> privateKey:", privateKey);
     console.log(" ### ===> 部署账户:", wallet.address);
   });
 
@@ -72,7 +73,10 @@ describe("Send EIP-1559 Raw Transaction", function () {
     const chainId = (await provider.getNetwork()).chainId;
     const nonce = await provider.getTransactionCount(wallet.address);
     const feeData = await provider.getFeeData();
-    // console.log(" ### ===> feeData", feeData);
+
+    console.log(" ### ===> account address", wallet.address);
+    console.log(" ### ===> nonce", nonce);
+    console.log(" ### ===> feeData", feeData);
 
     let gasLimit = 30000000n; // 简单转账
 

@@ -31,7 +31,10 @@ const config = {
     bcosnet: {
       url: BCOSNET_URL,
       accounts: PRIVATE_KEY.length > 0 ? PRIVATE_KEY : [
-        "5cf78aba3d1ba2fd1e6bedf1c0cf89b8f5ebf6da45edeb67099209f674e7fcfe"
+        "b0b9d33d8558ffb74cfa501426a1652bd4cb3452d49faad9b235c42f66d39e33",
+        "82e8df71b5066e0fd42c527317fba6ba5f6b60c5546e92c904efeaa8ec6a2d59",
+        "5ab8223a7b6656e939a4ebf233e3bcf8e230163d4048b9cb6380e1d9ad555ba9",
+        "5ab8223a7b6656e939a4ebf233e3bcf8e230163d4048b9cb6380e1d9ad555ba9"
       ],
       chainId: 20200
     },
@@ -45,13 +48,23 @@ const config = {
     // Sepolia测试网配置
     sepolia: {
       url: SEPOLIA_URL || "https://sepolia.infura.io/v3/your-api-key",
-      accounts: PRIVATE_KEY.length > 0 ? [PRIVATE_KEY[0]] : [],
+      accounts: PRIVATE_KEY.length > 0 ? PRIVATE_KEY : [
+        "b0b9d33d8558ffb74cfa501426a1652bd4cb3452d49faad9b235c42f66d39e33",
+        "82e8df71b5066e0fd42c527317fba6ba5f6b60c5546e92c904efeaa8ec6a2d59",
+        "5ab8223a7b6656e939a4ebf233e3bcf8e230163d4048b9cb6380e1d9ad555ba9",
+        "5ab8223a7b6656e939a4ebf233e3bcf8e230163d4048b9cb6380e1d9ad555ba9"
+      ],
       chainId: 11155111,
     },
     // Goerli测试网配置
     goerli: {
       url: GOERLI_URL || "https://goerli.infura.io/v3/your-api-key",
-      accounts: PRIVATE_KEY.length > 0 ? [PRIVATE_KEY[0]] : [],
+      accounts: PRIVATE_KEY.length > 0 ? PRIVATE_KEY : [
+        "b0b9d33d8558ffb74cfa501426a1652bd4cb3452d49faad9b235c42f66d39e33",
+        "82e8df71b5066e0fd42c527317fba6ba5f6b60c5546e92c904efeaa8ec6a2d59",
+        "5ab8223a7b6656e939a4ebf233e3bcf8e230163d4048b9cb6380e1d9ad555ba9",
+        "5ab8223a7b6656e939a4ebf233e3bcf8e230163d4048b9cb6380e1d9ad555ba9"
+      ],
       chainId: 5,
     },
     // hardhat内置测试网络

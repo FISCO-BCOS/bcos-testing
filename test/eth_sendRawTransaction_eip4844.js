@@ -25,7 +25,7 @@ describe("Send EIP-4844 Blob Transaction", function () {
     let wallet;
 
     before(async function () {
-        console.log(" ### ===> network", network);
+        // console.log(" ### ===> network", network);
         // 编译合约  
         console.log("编译合约...");
         await run("compile");
