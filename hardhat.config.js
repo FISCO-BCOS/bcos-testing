@@ -13,6 +13,12 @@ console.log("BCOSNET_URL:", BCOSNET_URL);
 
 /** @type {import('hardhat/config').HardhatUserConfig} */
 const config = {
+
+  mocha: {
+    // 全局超时时间（毫秒）  
+    timeout: 60000  // 60秒  
+  },
+
   solidity: {
     version: "0.8.28",
     settings: {
@@ -65,7 +71,7 @@ const config = {
         "5ab8223a7b6656e939a4ebf233e3bcf8e230163d4048b9cb6380e1d9ad555ba9",
         "5ab8223a7b6656e939a4ebf233e3bcf8e230163d4048b9cb6380e1d9ad555ba9"
       ],
-      chainId: 5,
+      chainId: 5
     },
     // hardhat内置测试网络
     hardhat: {
