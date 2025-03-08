@@ -23,6 +23,7 @@ contract BlockInfo {
         uint256 chainid;
         uint256 basefee;
         uint256 prevrandao;
+        bytes32 blobhash;   // 区块的blob哈希
     }
     
     // 存储最近一次调用的信息
@@ -43,7 +44,8 @@ contract BlockInfo {
             gaslimit: block.gaslimit,
             chainid: block.chainid,
             basefee: block.basefee,
-            prevrandao: block.prevrandao
+            prevrandao: block.prevrandao,
+            blobhash: blobhash(0)
         });
         
         lastBlockInfo = currentBlock;

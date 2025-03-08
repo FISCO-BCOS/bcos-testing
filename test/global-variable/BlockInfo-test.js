@@ -34,6 +34,7 @@ describe("BlockInfo", function () {
             console.log("链ID:", blockData.chainid.toString());
             console.log("基础费用:", blockData.basefee.toString());
             console.log("随机数:", blockData.prevrandao.toString());
+            console.log("Blob哈希:", blockData.blobhash);
 
             // 验证时间戳是否为有效值
             expect(blockData.timestamp).to.be.gt(0);
@@ -47,11 +48,29 @@ describe("BlockInfo", function () {
             expect(blockData.basefee).to.be.gte(0);
             // 验证随机数是否存在
             expect(blockData.prevrandao).to.equal(0);
-
             // 验证区块号是否正确
             expect(blockData.number).to.equal(receipt.blockNumber);
             // 验证chainId是否正确
             expect(blockData.chainid).to.equal(20200); // FISCO BCOS的chainId
+
+            // 验证Blob哈希
+            expect(blockData.blobhash).to.match(/^0x[0-9a-f]{64}$/i);
+        });
+
+        it("应该能正确获取连续区块的Blob哈希", async function () {
+            // 第一次调用
+            const tx1 = await blockInfo.captureBlockInfo();
+            await tx1.wait();
+            const blockData1 = await blockInfo.getLastBlockInfo();
+
+            // 第二次调用
+            const tx2 = await blockInfo.captureBlockInfo();
+            await tx2.wait();
+            const blockData2 = await blockInfo.getLastBlockInfo();
+
+            // 验证两次的Blob哈希都是有效的bytes32值
+            expect(blockData1.blobhash).to.match(/^0x[0-9a-f]{64}$/i);
+            expect(blockData2.blobhash).to.match(/^0x[0-9a-f]{64}$/i);
         });
 
         it("应该能正确获取调用信息", async function () {
