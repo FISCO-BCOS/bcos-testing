@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Debug Hardhat Tests",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}/node_modules/hardhat/internal/cli/cli.js",
+        "args": ["test", "${file}"],
+        "console": "integratedTerminal"
+      }
+    ]
+  }
