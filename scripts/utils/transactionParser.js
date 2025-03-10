@@ -62,7 +62,8 @@ function parseSignedTransaction(rawTxHash, rawTx, verbose = true) {
         }
 
         const serialized = parsedTx.serialized;
-        const rawTxHash = "0x" + keccak256(serialized);
+        // const rawTxHash = "0x" + keccak256(serialized);
+        const rawTxHash = keccak256(serialized);
         console.log(" ### 1111 ===> rawTxHash", rawTxHash);
         const txHash = parsedTx.hash;
 
