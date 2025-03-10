@@ -1,26 +1,22 @@
 // transactionParser.js  
-const { ethers } = require('ethers');
-
+const { ethers, toBeHex, keccak256 } = require('ethers');
+const { bytesToHex } = require("ethereum-cryptography/utils");
 /**  
  * 解析已签名的以太坊交易  
- * @param {string} rawTx - 原始交易十六进制字符串  
+ * @param {string} rawTxHash - 交易哈希  
+ * @param {string} rawTx - 交易十六进制字符串  
  * @param {boolean} [verbose=true] - 是否输出详细日志  
  * @returns {object} 解析后的交易对象  
  * @throws {Error} 如果解析失败会抛出错误  
  */
-function parseSignedTransaction(rawTx, verbose = true) {
+function parseSignedTransaction(rawTxHash, rawTx, verbose = true) {
     try {
-        // 检测ethers版本并使用适当的方法  
-        const isV6 = !!ethers.version && ethers.version.startsWith('6');
-
         // 解析交易  
-        const parsedTx = isV6
-            ? ethers.Transaction.from(rawTx)  // v6 语法  
-            : ethers.utils.parseTransaction(rawTx);  // v5 语法  
+        const parsedTx = ethers.Transaction.from(rawTx)
 
         // 格式化辅助函数  
-        const formatEther = isV6 ? ethers.formatEther : ethers.utils.formatEther;
-        const formatUnits = isV6 ? ethers.formatUnits : ethers.utils.formatUnits;
+        const formatEther = ethers.formatEther;
+        const formatUnits = ethers.formatUnits;
 
         // 创建结果对象  
         const result = {
@@ -34,9 +30,9 @@ function parseSignedTransaction(rawTx, verbose = true) {
             gasLimit: parsedTx.gasLimit.toString(),
             // 签名信息  
             signature: {
-                r: isV6 && parsedTx.signature ? parsedTx.signature.r : parsedTx.r,
-                s: isV6 && parsedTx.signature ? parsedTx.signature.s : parsedTx.s,
-                v: isV6 && parsedTx.signature ? parsedTx.signature.v : parsedTx.v
+                r: parsedTx.signature.r,
+                s: parsedTx.signature.s,
+                v: parsedTx.signature.v
             }
         };
 
@@ -65,9 +61,15 @@ function parseSignedTransaction(rawTx, verbose = true) {
             result.accessList = parsedTx.accessList;
         }
 
+        const serialized = parsedTx.serialized;
+        const rawTxHash = "0x" + keccak256(serialized);
+        console.log(" ### 1111 ===> rawTxHash", rawTxHash);
+        const txHash = parsedTx.hash;
+
         // 如果需要详细输出  
         if (verbose) {
             console.log("=== 交易基本信息 ===");
+            console.log("交易哈希:", txHash);
             console.log("交易类型:", result.type);
             console.log("链ID:", result.chainId);
             console.log("Nonce:", result.nonce);
@@ -117,73 +119,26 @@ function parseSignedTransaction(rawTx, verbose = true) {
             }
         }
 
-        return result;
+        if (txHash !== rawTxHash) {
+            console.log(" ERROR ### rawTxHash: ", rawTxHash);
+            console.log(" ERROR ### txHash: ", txHash);
+            throw new Error("txHash !== rawTxHash");
+        }
+
+        if (serialized !== rawTx) {
+            console.log(" ERROR ### serializedTx: ", serialized);
+            console.log(" ERROR ### rawTx: ", rawTx);
+            throw new Error("serialized !== rawTx");
+        }
+
+        return txHash;
     } catch (error) {
-        console.error("解析交易失败:", error.message);
+        console.error("解析签名交易失败: ", error);
         throw error;
-    }
-}
-
-/**  
- * 提取交易结构概要信息(简化版)  
- * @param {string} rawTx - 原始交易十六进制字符串  
- * @returns {object} 交易的基本信息  
- */
-function getTransactionSummary(rawTx) {
-    try {
-        const txDetails = parseSignedTransaction(rawTx, false);
-        return {
-            type: txDetails.type,
-            from: txDetails.from,
-            to: txDetails.to,
-            value: txDetails.value,
-            chainId: txDetails.chainId
-        };
-    } catch (error) {
-        console.error("提取交易摘要失败:", error.message);
-        return null;
-    }
-}
-
-/**  
- * 获取交易的发送方地址  
- * @param {string} rawTx - 原始交易十六进制字符串  
- * @returns {string|null} 发送方地址或null(如果解析失败)  
- */
-function getTransactionSender(rawTx) {
-    try {
-        const txDetails = parseSignedTransaction(rawTx, false);
-        return txDetails.from;
-    } catch (error) {
-        console.error("获取交易发送方失败:", error.message);
-        return null;
-    }
-}
-
-/**  
- * 验证交易签名是否有效  
- * @param {string} rawTx - 原始交易十六进制字符串  
- * @returns {boolean} 签名是否有效  
- */
-function verifyTransactionSignature(rawTx) {
-    try {
-        const txDetails = parseSignedTransaction(rawTx, false);
-        // 需要根据ethers版本不同使用不同的验证方法  
-
-        // 方法略有不同，此处简化处理，实际应用中应根据交易类型和ethers版本调整  
-        // 真实实现需要从交易恢复签名并验证地址  
-
-        return txDetails.from && txDetails.from.startsWith('0x');
-    } catch (error) {
-        console.error("验证交易签名失败:", error.message);
-        return false;
     }
 }
 
 // 导出工具函数  
 module.exports = {
-    parseSignedTransaction,
-    getTransactionSummary,
-    getTransactionSender,
-    verifyTransactionSignature
+    parseSignedTransaction
 };  

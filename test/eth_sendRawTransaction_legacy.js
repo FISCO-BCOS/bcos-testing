@@ -34,7 +34,7 @@ describe("Legacy Raw Transaction 测试集", function () {
     const url = network.config.url;
     const name = network.name;
     // 打印网络信息
-    console.log(" ### ===> network", network);
+    // console.log(" ### ===> network", network);
 
     // 私钥 (仅测试环境使用!)  
     const tempPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
