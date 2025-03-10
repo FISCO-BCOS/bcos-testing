@@ -1,6 +1,10 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
+const {
+    loadFixture,
+} = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+
 describe("Block and Tx Properties 测试集", function () {
     let BlockAndTxProperties;
     let blockAndTxProperties;
@@ -14,34 +18,49 @@ describe("Block and Tx Properties 测试集", function () {
         BlockAndTxProperties = await ethers.getContractFactory("BlockTxProperties");
     });
 
-    it("部署合约", async function () {
-        // 部署合约  
-        blockAndTxProperties = await BlockAndTxProperties.deploy();
+    async function deployBlockAndTxPropertiesFixture() {
+        // const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
+        // const ONE_GWEI = 1_000_000_000;
 
-        // 等待部署交易确认  
-        const receipt = await blockAndTxProperties.deployTransaction.wait();
+        // const lockedAmount = ONE_GWEI;
+        // const unlockTime = (await time.latest()) + ONE_YEAR_IN_SECS;
 
-        // 验证合约地址  
-        expect(receipt.contractAddress).to.not.be.undefined;
-        console.log("合约已部署，地址:", receipt.contractAddress);
-    });
+        // Contracts are deployed using the first signer/account by default
+        const [owner, otherAccount] = await ethers.getSigners();
+
+        const BlockTxProperties = await ethers.getContractFactory("BlockTxProperties");
+        const blockTxProperties = await BlockTxProperties.deploy();
+
+        return { blockTxProperties };
+    }
 
     it("测试区块属性记录", async function () {
+
+        const { blockTxProperties } = await loadFixture(
+            deployBlockAndTxPropertiesFixture
+        );
+
         // 调用记录区块属性的函数  
-        const tx = await blockAndTxProperties.recordBlockProperties();
+        const tx = await blockTxProperties.updateBlockProperties();
         const receipt = await tx.wait();
 
         // 可以添加更多断言来验证区块属性  
-        console.log("区块属性记录交易 Gas 消耗:", receipt.gasUsed.toString());
+        console.log("区块属性记录交易回执:", receipt);
+        console.log("区块属性记录交易回执logs:", receipt.logs);
     });
 
     it("测试交易属性记录", async function () {
-        // 发送一个带有一些 ETH 的交易  
-        const tx = await blockAndTxProperties.recordTransactionProperties({
-            value: ethers.parseEther("0.1")  // 发送 0.1 ETH  
-        });
+
+        const { blockTxProperties } = await loadFixture(
+            deployBlockAndTxPropertiesFixture
+        );
+
+        // 调用记录区块属性的函数  
+        const tx = await blockTxProperties.updateTransactionProperties();
         const receipt = await tx.wait();
 
-        console.log("交易属性记录交易 Gas 消耗:", receipt.gasUsed.toString());
+        // 可以添加更多断言来验证区块属性  
+        console.log("区块属性记录交易回执:", receipt);
+        console.log("区块属性记录交易回执logs:", receipt.logs);
     });
 });  
