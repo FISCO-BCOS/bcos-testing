@@ -47,7 +47,7 @@ describe("Send EIP-4844 Blob Transaction", function () {
 
         // 私钥 (仅测试环境使用!)  
         tempPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-        privateKey = network.config.accounts[0] || tempPrivateKey;
+        privateKey = config.accounts[0] || tempPrivateKey;
 
         wallet = new ethers.Wallet(privateKey, provider);
         console.log(" ### ===> 部署账户:", wallet.address);

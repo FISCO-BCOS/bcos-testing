@@ -6,7 +6,11 @@ const { bytesToHex, hexToBytes } = require("ethereum-cryptography/utils");
 const RLP = require("@ethereumjs/rlp");
 const {
     parseSignedTransaction
-} = require('../scripts/utils/transactionParser');
+} = require('../../scripts/utils/transactionParser');
+
+const {
+    createEip2930Transaction
+} = require('../../scripts/utils/transactionCreator');
 
 // EIP-2930 交易结构
 // 0x01 || rlp([chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, signatureYParity, signatureR, signatureS])
@@ -35,7 +39,7 @@ describe("Send EIP-2930 Raw Transaction", function () {
 
         // 私钥 (仅测试环境使用!)  
         const tempPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-        privateKey = network.config.accounts[0] || tempPrivateKey;
+        privateKey = config.accounts[0] || tempPrivateKey;
         // === 钱包 ===  
         wallet = new ethers.Wallet(privateKey, null);
         accountAddress = wallet.address;
@@ -79,7 +83,7 @@ describe("Send EIP-2930 Raw Transaction", function () {
         const bytecode = contractArtifact.bytecode;  // 获取合约字节码 
 
         // === 步骤: 创建签名交易 ===  
-        const { signedTx, rawTxHash } = createTransaction(
+        const { signedTx, rawTxHash } = createEip2930Transaction(
             chainId,
             nonce,
             feeData,
@@ -129,88 +133,3 @@ describe("Send EIP-2930 Raw Transaction", function () {
         }
     });
 });
-
-// ======== 工具函数 ========
-
-/**
- * 创建EIP-2930交易并签名交易
- * 
- * @param {*} chainId 
- * @param {*} nonce 
- * @param {*} feeData 
- * @param {*} gasLimit 
- * @param {*} from 
- * @param {*} to 
- * @param {*} value 
- * @param {*} data  
- * @param {*} accessList 
- * @param {*} wallet 
- * @returns 
- */
-function createTransaction(chainId, nonce, feeData, gasLimit, from, to, value, data, accessList, wallet) {
-
-    const gasPrice = feeData.gasPrice || ethers.parseUnits("30", "gwei");
-
-    const maxFeePerGas = /*feeData.maxFeePerGas ||*/ ethers.parseUnits("0.0000003", "gwei");
-    const maxPriorityFeePerGas = /*feeData.maxPriorityFeePerGas ||*/ ethers.parseUnits("0.00000001", "gwei");
-
-    // 0x01 || rlp([chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, signatureYParity, signatureR, signatureS])
-    const fields = [
-        chainId,
-        nonce,
-        gasPrice,
-        gasLimit,
-        to || "0x",
-        value,
-        data || "0x",
-        accessList || []
-    ];
-
-    // 打印每个字段，用于调试
-    console.log("EIP-2930 Transaction Fields:", {
-        chainId: fields[0],
-        nonce: fields[1],
-        gasPrice: fields[2],
-        gasLimit: fields[3],
-        to: fields[4],
-        value: fields[5],
-        data: fields[6].substring(0, 20) + "...",
-        accessList: fields[7]
-    });
-
-    // RLP encode transaction fields
-    const rlpEncoded = RLP.encode(fields);
-
-    const txType = Buffer.from([1]); // EIP-2930类型前缀
-    const dataToHash = Buffer.concat([txType, Buffer.from(rlpEncoded)]);
-    const txHash = keccak256(dataToHash);
-
-    // 签名哈希  
-    const signature = wallet.signingKey.sign(txHash);
-    const r = signature.r;
-    const s = signature.s;
-    const y = signature.yParity;
-    // 构建包含签名的完整交易字段  
-    const signedFields = [...fields, y, r, s];
-
-    console.log(" ### ===> signedFields", signedFields);
-
-    // RLP编码签名后的交易
-    const signedRlpEncoded = RLP.encode(signedFields);
-
-    // 添加EIP-1559交易类型前缀(0x01)
-    const signedTx = "0x01" + bytesToHex(signedRlpEncoded);
-
-    // 交易哈希
-    const rawTxHash = keccak256(hexToBytes(signedTx));
-
-    console.debug("EIP-2930 Transaction Sign Tx:", {
-        signedTx: signedTx,
-        txHash: rawTxHash
-    });
-
-    return {
-        signedTx,
-        rawTxHash: rawTxHash
-    };
-}

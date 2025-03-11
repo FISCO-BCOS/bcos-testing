@@ -1,12 +1,12 @@
 const { run, network, config } = require("hardhat")
 const { ethers } = require("ethers");
 const { expect, AssertionError } = require("chai");
-const { keccak256 } = require("ethereum-cryptography/keccak");
-const { bytesToHex } = require("ethereum-cryptography/utils");
-const RLP = require("@ethereumjs/rlp");
 // const {
 //   parseSignedTransaction
 // } = require('../scripts/utils/transactionParser');
+const {
+  createLegacyTransaction
+} = require('../../scripts/utils/transactionCreator');
 
 describe("Legacy Raw Transaction 测试集", function () {
   // rpc provider  
@@ -38,7 +38,7 @@ describe("Legacy Raw Transaction 测试集", function () {
 
     // 私钥 (仅测试环境使用!)  
     const tempPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-    privateKey = network.config.accounts[0] || tempPrivateKey;
+    privateKey = config.accounts[0] || tempPrivateKey;
     // === 钱包 ===  
     wallet = new ethers.Wallet(privateKey, null);
     accountAddress = wallet.address;
@@ -81,7 +81,7 @@ describe("Legacy Raw Transaction 测试集", function () {
     const bytecode = contractArtifact.bytecode;  // 获取合约字节码 
 
     // === 步骤: 创建签名交易 ===  
-    const { signedTx, rawTxHash } = createTransaction(
+    const { signedTx, rawTxHash } = createLegacyTransaction(
       chainId,
       nonce,
       feeData,
@@ -146,7 +146,7 @@ describe("Legacy Raw Transaction 测试集", function () {
     const data = emitEventData;
 
     // === 步骤: 创建签名交易 ===  
-    const { signedTx, rawTxHash } = createTransaction(
+    const { signedTx, rawTxHash } = createLegacyTransaction(
       chainId,
       nonce,
       feeData,
@@ -206,7 +206,7 @@ describe("Legacy Raw Transaction 测试集", function () {
       const nonce = await provider.getTransactionCount(accountAddress) - 1;
 
       // === 步骤: 创建签名交易 ===  
-      const { signedTx, rawTxHash } = createTransaction(
+      const { signedTx, rawTxHash } = createLegacyTransaction(
         chainId,
         nonce,
         feeData,
@@ -257,7 +257,7 @@ describe("Legacy Raw Transaction 测试集", function () {
       // Nonce 置零
       const nonce = 0;
       // === 步骤: 创建签名交易 ===  
-      const { signedTx, rawTxHash } = createTransaction(
+      const { signedTx, rawTxHash } = createLegacyTransaction(
         chainId,
         nonce,
         feeData,
@@ -308,7 +308,7 @@ describe("Legacy Raw Transaction 测试集", function () {
     {
       const nonce = "HelloWorld，世界你好~！@#￥%……&*（）abcdefghijklmiopq63614101240054722004297811927860191653951076737992592011437881426126469238567698669271990135586095028951356841884186031262120223881211828646342895460926161383537";
       // === 步骤: 创建签名交易 ===  
-      const { signedTx, rawTxHash } = createTransaction(
+      const { signedTx, rawTxHash } = createLegacyTransaction(
         chainId,
         nonce,
         feeData,
@@ -369,7 +369,7 @@ describe("Legacy Raw Transaction 测试集", function () {
     const data = emitEventData;
 
     // === 步骤: 创建交易 === 
-    const { signedTx, rawTxHash } = createTransaction(
+    const { signedTx, rawTxHash } = createLegacyTransaction(
       chainId,
       nonce,
       feeData,
@@ -417,7 +417,7 @@ describe("Legacy Raw Transaction 测试集", function () {
     const data = emitEventData;
 
     // === 步骤: 创建交易 === 
-    const { signedTx, rawTxHash } = createTransaction(
+    const { signedTx, rawTxHash } = createLegacyTransaction(
       chainId,
       nonce,
       feeData,
@@ -499,97 +499,3 @@ async function handleError(rawTxHash, accountAddress, error, provider) {
   expect(transaction.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
   // console.debug(" ### ===> transaction", transaction);
 }
-
-/**
- * 创建交易并签名交易
- * 
- * @param {*} chainId 
- * @param {*} nonce 
- * @param {*} feeData 
- * @param {*} gasLimit 
- * @param {*} from 
- * @param {*} to 
- * @param {*} value 
- * @param {*} data  
- * @param {*} wallet 
- * @returns 
- */
-function createTransaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet) {
-
-  const gasPrice = feeData.gasPrice || ethers.parseUnits("30", "gwei");
-
-  // Legacy交易的字段顺序: [nonce, gasPrice, gasLimit, to, value, data, v, r, s]  
-  const fields = [
-    nonce,
-    gasPrice, // 使用gasPrice替代maxFeePerGas 
-    gasLimit,
-    to || "0x",
-    value,
-    data || "0x",
-    chainId,    // v 值在未签名时是chainId  
-    "0x",              // r 值在未签名时是0x  
-    "0x"               // s 值在未签名时是0x  
-  ];
-
-  // 打印每个字段，用于调试  
-  console.debug("Legacy Transaction Fields:", {
-    nonce: fields[0],
-    gasPrice: fields[1],
-    gasLimit: fields[2],
-    to: fields[3],
-    value: fields[4],
-    data: fields[5].substring(0, 20) + "...", // 截断数据显示  
-    chainId: fields[6]
-  });
-
-  // RLP encode transaction fields  
-  const rlpEncoded = RLP.encode(fields);
-
-  // 计算需要签名的哈希  
-  const txHash = keccak256(Buffer.from(rlpEncoded));
-
-  // 签名哈希  
-  const signature = wallet.signingKey.sign(txHash);
-  //  从签名中提取r, s, v  
-  const r = signature.r;
-  const s = signature.s;
-  /*
-  // 计算v值 - Legacy交易的v值计算: recoveryId + chainId * 2 + 35  
-  static getChainIdV(chainId: BigNumberish, v: 27 | 28): bigint {
-    return (getBigInt(chainId) * BN_2) + BigInt(35 + v - 27);
-  }
-  */
-  const v = BigInt(chainId) * 2n + BigInt(35 + signature.v - 27);
-
-  // 构建包含签名的完整交易字段  
-  const signedFields = [
-    nonce,
-    gasPrice,
-    gasLimit,
-    to || "0x",
-    value,
-    data || "0x",
-    v,
-    r,
-    s
-  ];
-
-  // RLP编码签名后的交易  
-  const signedRlpEncoded = RLP.encode(signedFields);
-
-  const signedTx = "0x" + bytesToHex(signedRlpEncoded);
-
-  // 交易哈希
-  const rawTxHash = "0x" + bytesToHex(keccak256(Buffer.from(signedRlpEncoded)));
-
-  console.debug("Legacy Transaction Sign Tx:", {
-    signedTx: signedTx,
-    txHash: rawTxHash
-  });
-
-  return {
-    signedTx,
-    rawTxHash: rawTxHash
-  };
-}
-

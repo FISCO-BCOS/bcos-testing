@@ -5,7 +5,11 @@ const { bytesToHex, hexToBytes } = require("ethereum-cryptography/utils");
 const RLP = require("@ethereumjs/rlp");
 const {
   parseSignedTransaction
-} = require('../scripts/utils/transactionParser');
+} = require('../../scripts/utils/transactionParser');
+
+const {
+  createEip1559Transaction
+} = require('../../scripts/utils/transactionCreator');
 
 describe("Send EIP-1559 Raw Transaction", function () {
 
@@ -31,7 +35,7 @@ describe("Send EIP-1559 Raw Transaction", function () {
 
     // 私钥 (仅测试环境使用!)  
     const tempPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-    privateKey = network.config.accounts[0] || tempPrivateKey;
+    privateKey = config.accounts[0] || tempPrivateKey;
     // === 钱包 ===  
     wallet = new ethers.Wallet(privateKey, null);
     accountAddress = wallet.address;
@@ -74,7 +78,7 @@ describe("Send EIP-1559 Raw Transaction", function () {
     const bytecode = contractArtifact.bytecode;  // 获取合约字节码 
 
     // === 步骤: 创建签名交易 ===  
-    const { signedTx, rawTxHash } = createTransaction(
+    const { signedTx, rawTxHash } = createEip1559Transaction(
       chainId,
       nonce,
       feeData,
@@ -224,93 +228,3 @@ describe("Send EIP-1559 Raw Transaction", function () {
   });
   */
 });
-
-// ======== 工具函数 ========
-
-/**
- * 创建EIP-1559交易并签名交易
- * 
- * @param {*} chainId 
- * @param {*} nonce 
- * @param {*} feeData 
- * @param {*} gasLimit 
- * @param {*} from 
- * @param {*} to 
- * @param {*} value 
- * @param {*} data  
- * @param {*} accessList 
- * @param {*} wallet 
- * @returns 
- */
-function createTransaction(chainId, nonce, feeData, gasLimit, from, to, value, data, accessList, wallet) {
-
-  // const gasPrice = feeData.gasPrice || ethers.parseUnits("30", "gwei");
-
-  // console.log(" ### ===> feeData", feeData);
-
-  const maxFeePerGas = /*feeData.maxFeePerGas ||*/ ethers.parseUnits("0.0000003", "gwei");
-  const maxPriorityFeePerGas = /*feeData.maxPriorityFeePerGas ||*/ ethers.parseUnits("0.00000001", "gwei");
-
-  // EIP1559 交易的字段顺序: 0x02 || rlp([chain_id, nonce, max_priority_fee_per_gas, max_fee_per_gas, gas_limit, destination, amount, data, access_list, signature_y_parity, signature_r, signature_s]) 
-  const fields = [
-    chainId,
-    nonce,
-    maxPriorityFeePerGas,
-    maxFeePerGas,
-    gasLimit,
-    to || "0x",
-    value,
-    data || "0x",
-    accessList || []
-  ];
-
-  // 打印每个字段，用于调试
-  console.log("EIP-1559 Transaction Fields:", {
-    chainId: fields[0],
-    nonce: fields[1],
-    maxPriorityFeePerGas: fields[2],
-    maxFeePerGas: fields[3],
-    gasLimit: fields[4],
-    to: fields[5],
-    value: fields[6],
-    data: fields[7].substring(0, 20) + "...",
-    accessList: fields[8]
-  });
-
-  // RLP encode transaction fields
-  const rlpEncoded = RLP.encode(fields);
-
-  const txType = Buffer.from([2]); // EIP-1559类型前缀
-  const dataToHash = Buffer.concat([txType, Buffer.from(rlpEncoded)]);
-  const txHash = keccak256(dataToHash);
-
-  // 签名哈希  
-  const signature = wallet.signingKey.sign(txHash);
-  const r = signature.r;
-  const s = signature.s;
-  const y = signature.yParity;
-  // 构建包含签名的完整交易字段  
-  const signedFields = [...fields, y, r, s];
-
-  console.log(" ### ===> signedFields", signedFields);
-
-  // RLP编码签名后的交易
-  const signedRlpEncoded = RLP.encode(signedFields);
-
-  // 添加EIP-1559交易类型前缀(0x02)
-  const signedTx = "0x02" + bytesToHex(signedRlpEncoded);
-
-  // 交易哈希
-  const rawTxHash = keccak256(hexToBytes(signedTx));
-
-  console.debug("EIP-1559 Transaction Sign Tx:", {
-    signedTx: signedTx,
-    txHash: rawTxHash
-  });
-
-  return {
-    signedTx,
-    rawTxHash: rawTxHash
-  };
-}
-

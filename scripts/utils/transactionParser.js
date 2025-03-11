@@ -1,6 +1,6 @@
 // transactionParser.js  
-const { ethers, toBeHex, keccak256 } = require('ethers');
-const { bytesToHex } = require("ethereum-cryptography/utils");
+const { ethers, keccak256 } = require('ethers');
+
 /**  
  * 解析已签名的以太坊交易  
  * @param {string} rawTxHash - 交易哈希  
