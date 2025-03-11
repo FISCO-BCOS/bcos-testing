@@ -2,7 +2,7 @@ require("hardhat/config");
 const fs = require('fs');
 const path = require('path');
 
-task("test:list", "Lists all test cases")
+task("listTests", "Lists all test cases")
   .addOptionalParam("testDir", "Directory containing test files", "./test")
   .setAction(async (taskArgs, hre) => {
     console.log("参数 taskArgs", taskArgs);
