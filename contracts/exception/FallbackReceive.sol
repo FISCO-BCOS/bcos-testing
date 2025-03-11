@@ -2,10 +2,10 @@
 pragma solidity ^0.8.28;
 
 /**
- * @title FallbackReceiveTest
+ * @title FallbackReceive
  * @dev 测试合约的 fallback、receive、staticcall 和 payable 功能
  */
-contract FallbackReceiveTest {
+contract FallbackReceive {
     // 状态变量
     uint256 public lastValueReceived;
     string public lastFunctionCalled;
