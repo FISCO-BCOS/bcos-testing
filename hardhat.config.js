@@ -1,5 +1,4 @@
 require("@nomicfoundation/hardhat-toolbox");
-require("./scripts/tasks/block-number")
 require("./scripts/tasks/list-tests")
 // require("hardhat-docgen");
 require("dotenv").config();
