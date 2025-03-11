@@ -4,6 +4,45 @@ const { keccak256 } = require("ethereum-cryptography/keccak");
 const { bytesToHex, hexToBytes } = require("ethereum-cryptography/utils");
 const RLP = require("@ethereumjs/rlp");
 
+// 定义交易类型的枚举  
+// enum TransactionType {
+//     Legacy = 0,
+//     EIP2930 = 1,
+//     EIP1559 = 2,
+//     EIP4844 = 3
+// }
+
+/**
+ * 创建交易并签名交易
+ * 
+ * @param {*} txType 
+ * @param {*} chainId 
+ * @param {*} nonce 
+ * @param {*} feeData 
+ * @param {*} gasLimit 
+ * @param {*} from 
+ * @param {*} to 
+ * @param {*} value 
+ * @param {*} data  
+ * @param {*} wallet 
+ * @returns 
+ */
+function createTransaction(txType, chainId, nonce, feeData, gasLimit, from, to, value, data, wallet) {
+
+    if (txType === 0) {
+        return createLegacyTransaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet);
+    } else if (txType === 1) {
+        return createEip2930Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet);
+    } else if (txType === 2) {
+        return createEip1559Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet);
+    } else if (txType === 3) {
+        return createEip4844Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet);
+    } else {
+        console.error("Invalid transaction type, " + txType);
+        throw new Error("Invalid transaction type");
+    }
+}
+
 /**
  * 创建交易并签名交易
  * 
@@ -20,7 +59,9 @@ const RLP = require("@ethereumjs/rlp");
  */
 function createLegacyTransaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet) {
 
-    const gasPrice = feeData.gasPrice || ethers.parseUnits("30", "gwei");
+    //TODO:
+    // const gasPrice = ethers.parseUnits("0.0003", "gwei");
+    const gasPrice = feeData.gasPrice || ethers.parseUnits("0.0000003", "gwei");
 
     // Legacy交易的字段顺序: [nonce, gasPrice, gasLimit, to, value, data, v, r, s]  
     const fields = [
@@ -51,7 +92,6 @@ function createLegacyTransaction(chainId, nonce, feeData, gasLimit, from, to, va
 
     // 计算需要签名的哈希  
     const txHash = keccak256(Buffer.from(rlpEncoded));
-
     // 签名哈希  
     const signature = wallet.signingKey.sign(txHash);
     //  从签名中提取r, s, v  
@@ -290,6 +330,7 @@ function createEip4844Transaction(chainId, nonce, feeData, gasLimit, from, to, v
 
 // 导出模块
 module.exports = {
+    createTransaction,
     createLegacyTransaction,
     createEip1559Transaction,
     createEip2930Transaction,
