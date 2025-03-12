@@ -5,7 +5,8 @@ const { expect, AssertionError } = require("chai");
 //   parseSignedTransaction
 // } = require('../scripts/utils/transactionParser');
 const {
-  createLegacyTransaction
+  // createLegacyTransaction,
+  createTransaction
 } = require('../../scripts/utils/transactionCreator');
 
 describe("Legacy Raw Transaction 测试集", function () {

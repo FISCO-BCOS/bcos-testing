@@ -3,15 +3,7 @@ const { ethers } = require("ethers");
 const { keccak256 } = require("ethereum-cryptography/keccak");
 const { bytesToHex, hexToBytes } = require("ethereum-cryptography/utils");
 const RLP = require("@ethereumjs/rlp");
-
-// 定义交易类型的枚举  
-// enum TransactionType {
-//     Legacy = 0,
-//     EIP2930 = 1,
-//     EIP1559 = 2,
-//     EIP4844 = 3
-// }
-
+const { TransactionType } = require("./transactionType");
 /**
  * 创建交易并签名交易
  * 
@@ -29,13 +21,13 @@ const RLP = require("@ethereumjs/rlp");
  */
 function createTransaction(txType, chainId, nonce, feeData, gasLimit, from, to, value, data, wallet) {
 
-    if (txType === 0) {
+    if (txType === TransactionType.LegacyTx) {
         return createLegacyTransaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet);
-    } else if (txType === 1) {
+    } else if (txType === TransactionType.Eip2930) {
         return createEip2930Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet);
-    } else if (txType === 2) {
+    } else if (txType === TransactionType.Eip1559) {
         return createEip1559Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet);
-    } else if (txType === 3) {
+    } else if (txType === TransactionType.Eip4844) {
         return createEip4844Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet);
     } else {
         console.error("Invalid transaction type, " + txType);

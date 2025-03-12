@@ -6,6 +6,7 @@ const hre = require("hardhat");
 const { expect, AssertionError } = require("chai");
 const { networks } = require("../../hardhat.config");
 const { createTransaction } = require("../../scripts/utils/transactionCreator");
+const { TransactionType } = require("../../scripts/utils/transactionType");
 
 // 测试以太坊与Fisco Bcosnet的交易、交易回执、区块的结构是否一致
 /*
@@ -243,7 +244,7 @@ describe("Ethereum vs Potos: Data Structure Comparison", function () {
         // const accountAddress = wallet.address;
 
         // fb 部署合约
-        const callEmptyContractFixture1 = createCallEmptyContractFixture(0, wallet1, bcosnetProvider);
+        const callEmptyContractFixture1 = createCallEmptyContractFixture(TransactionType.LegacyTx, wallet1, bcosnetProvider);
         // const txHash = await loadFixture(callEmptyContractFixture);
         // console.log(" ### ===> txHash: ", txHash);
 
@@ -259,7 +260,7 @@ describe("Ethereum vs Potos: Data Structure Comparison", function () {
         // const accountAddress = wallet.address;
 
         // hardhat 部署合约
-        const callEmptyContractFixture2 = createCallEmptyContractFixture(0, wallet2, hardhatProvider);
+        const callEmptyContractFixture2 = createCallEmptyContractFixture(TransactionType.LegacyTx, wallet2, hardhatProvider);
         // const txHash = await loadFixture(callEmptyContractFixture);
         // console.log(" ### ===> txHash: ", txHash);
 
