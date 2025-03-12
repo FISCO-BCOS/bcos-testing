@@ -301,9 +301,7 @@ describe("Ethereum vs Potos: Data Structure Comparison", function () {
     // EIP2930交易
     it("EIP2930 Transaction", function () {
 
-        // it("Should set the right owner", async function () {
-        //     const { emptyContract } = await loadFixture(() => deployEmptyFixture, 0, bcosnetProvider);
-        // });
+
 
     });
 
