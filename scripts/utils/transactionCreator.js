@@ -210,9 +210,8 @@ function createEip1559Transaction(chainId, nonce, feeData, gasLimit, from, to, v
 
     // 添加EIP-1559交易类型前缀(0x02)
     const signedTx = "0x02" + bytesToHex(signedRlpEncoded);
-
     // 交易哈希
-    const rawTxHash = keccak256(hexToBytes(signedTx));
+    const rawTxHash = "0x" + bytesToHex(keccak256(Buffer.from(hexToBytes(signedTx))));
 
     console.debug("EIP-1559 Transaction Sign Tx:", {
         signedTx: signedTx,
@@ -296,7 +295,7 @@ function createEip2930Transaction(chainId, nonce, feeData, gasLimit, from, to, v
     const signedTx = "0x01" + bytesToHex(signedRlpEncoded);
 
     // 交易哈希
-    const rawTxHash = keccak256(hexToBytes(signedTx));
+    const rawTxHash = "0x" + bytesToHex(keccak256(Buffer.from(hexToBytes(signedTx))));
 
     console.debug("EIP-2930 Transaction Sign Tx:", {
         signedTx: signedTx,
