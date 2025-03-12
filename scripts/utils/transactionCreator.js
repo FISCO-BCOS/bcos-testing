@@ -4,6 +4,10 @@ const { keccak256 } = require("ethereum-cryptography/keccak");
 const { bytesToHex, hexToBytes } = require("ethereum-cryptography/utils");
 const RLP = require("@ethereumjs/rlp");
 const { TransactionType } = require("./transactionType");
+const {
+    parseSignedTransaction
+} = require('./transactionParser');
+
 /**
  * 创建交易并签名交易
  * 
@@ -21,6 +25,35 @@ const { TransactionType } = require("./transactionType");
  */
 function createTransaction(txType, chainId, nonce, feeData, gasLimit, from, to, value, data, wallet) {
 
+    const { signedTx, rawTxHash } = createTransactionInner(txType, chainId, nonce,
+        feeData, gasLimit, from, to, value, data, wallet);
+
+    // 解析签名交易,检查拼接的交易是否正确
+    parseSignedTransaction(rawTxHash, signedTx);
+
+    return {
+        signedTx,
+        rawTxHash
+    };
+}
+
+/**
+ * 创建交易并签名交易
+ * 
+ * @param {*} txType 
+ * @param {*} chainId 
+ * @param {*} nonce 
+ * @param {*} feeData 
+ * @param {*} gasLimit 
+ * @param {*} from 
+ * @param {*} to 
+ * @param {*} value 
+ * @param {*} data  
+ * @param {*} wallet 
+ * @returns 
+ */
+function createTransactionInner(txType, chainId, nonce, feeData, gasLimit, from, to, value, data, wallet) {
+
     if (txType === TransactionType.LegacyTx) {
         return createLegacyTransaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet);
     } else if (txType === TransactionType.Eip2930) {
@@ -31,7 +64,7 @@ function createTransaction(txType, chainId, nonce, feeData, gasLimit, from, to, 
         return createEip4844Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, [], wallet);
     } else {
         console.error("Invalid transaction type, " + txType);
-        throw new Error("Invalid transaction type");
+        throw new Error("Invalid transaction type: " + txType);
     }
 }
 
