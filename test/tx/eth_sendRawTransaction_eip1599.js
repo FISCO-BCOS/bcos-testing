@@ -79,7 +79,7 @@ describe("EIP1599 Transaction 测试集", async function () {
 
     // === 步骤: 创建签名交易 ===  
     const { signedTx, rawTxHash } = createTransaction(
-      TransactionType.Eip2930,
+      TransactionType.Eip1559,
       chainId,
       nonce,
       feeData,
@@ -143,7 +143,7 @@ describe("EIP1599 Transaction 测试集", async function () {
 
     // === 步骤: 创建签名交易 ===  
     const { signedTx, rawTxHash } = createTransaction(
-      TransactionType.Eip2930,
+      TransactionType.Eip1559,
       chainId,
       nonce,
       feeData,
@@ -206,7 +206,7 @@ describe("EIP1599 Transaction 测试集", async function () {
 
       // === 步骤: 创建签名交易 ===  
       const { signedTx } = createTransaction(
-        TransactionType.Eip2930,
+        TransactionType.Eip1559,
         chainId,
         nonce,
         feeData,
@@ -303,7 +303,7 @@ describe("EIP1599 Transaction 测试集", async function () {
 
       // === 步骤: 创建签名交易 ===  
       const { signedTx } = createTransaction(
-        TransactionType.Eip2930,
+        TransactionType.Eip1559,
         chainId,
         nonce,
         feeData,
@@ -390,7 +390,7 @@ describe("EIP1599 Transaction 测试集", async function () {
       nonce = await provider.getTransactionCount(accountAddress);
       // === 步骤: 创建签名交易 ===  
       const { signedTx } = createTransaction(
-        TransactionType.Eip2930,
+        TransactionType.Eip1559,
         chainId,
         nonce,
         feeData,

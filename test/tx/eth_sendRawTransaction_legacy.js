@@ -1,19 +1,15 @@
 const { run, network, config } = require("hardhat")
 const { ethers } = require("ethers");
 const { expect, AssertionError } = require("chai");
-// const {
-//   parseSignedTransaction
-// } = require('../scripts/utils/transactionParser');
 const {
   createTransaction
 } = require('../../scripts/utils/transactionCreator');
 const { TransactionType } = require("../../scripts/utils/transactionType");
 const { handleTxError, handleTxOk } = require("../../scripts/utils/transactionHandler");
 
-describe("Legacy Raw Transaction 测试集", function () {
+describe("Legacy Raw Transaction 测试集", async function () {
   // rpc provider  
   let provider;
-
   // 钱包
   let wallet;
   // 私钥  
@@ -64,7 +60,6 @@ describe("Legacy Raw Transaction 测试集", function () {
     provider = new ethers.JsonRpcProvider(url, { chainId: chainId, name: name }, { staticNetwork: true });
 
     accountNonce = await provider.getTransactionCount(accountAddress);
-    console.log(" ### ===> 发送交易账户nonce:", accountNonce);
   });
 
   it("部署合约", async function () {
@@ -189,24 +184,28 @@ describe("Legacy Raw Transaction 测试集", function () {
       await handleTxError(rawTxHash, accountAddress, error, provider);
     }
   });
+  /*
 
+  describe("测试用例: nonce 字段", function () {
+    // 移除 async  
+    before(async function () {
+      // 在这里初始化需要在所有测试之前执行的异步操作  
+      this.chainId = parseInt(await provider.send('eth_chainId', []), 16);
+      this.feeData = await provider.getFeeData();
+      this.from = accountAddress;
+      this.to = contractAddress;
+      this.value = 0;
+      this.gasLimit = 22000000n;
+      this.data = emitEventData;
+      this.wallet = wallet;
+    });
 
-  it("异常nonce", async function () {
-
-    const chainId = parseInt(await provider.send('eth_chainId', []), 16);
-    const feeData = await provider.getFeeData();
-    const from = accountAddress;
-    const to = contractAddress; // 合约部署，to为null 
-    const value = 0; // 不发送ETH  
-    const gasLimit = 22000000n; // 为合约部署设置合适的gas限制  
-    const data = emitEventData;
-
-    {
-      // Nonce 与前一次相同 
-      const nonce = await provider.getTransactionCount(accountAddress) - 1;
+    async function testNonceFieldInvalidCases(nonce, context) {
+      // 使用传入的上下文  
+      const { chainId, feeData, from, to, value, gasLimit, data, wallet } = context;
 
       // === 步骤: 创建签名交易 ===  
-      const { signedTx, rawTxHash } = createTransaction(
+      const { signedTx } = createTransaction(
         TransactionType.LegacyTx,
         chainId,
         nonce,
@@ -221,44 +220,89 @@ describe("Legacy Raw Transaction 测试集", function () {
 
       try {
         // === 步骤: 发送交易 ===  
-        const txHash = await provider.send("eth_sendRawTransaction", [signedTx]);
+        await provider.send("eth_sendRawTransaction", [signedTx]);
         expect(true).to.be.false;
-        // console.log("交易已发送，哈希:", txHash);
-        // expect(txHash).to.equal(rawTxHash);
-
-        // // === 步骤: 等待交易确认 ===  
-        // const receipt = await provider.waitForTransaction(txHash);
-
-        // // 校验from字段
-        // expect(receipt.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
-
-        // const transaction = await provider.getTransaction(txHash);
-        // expect(transaction).to.not.be.null;
-        // expect(transaction.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
-        // console.debug(" ### ===> transaction", transaction);
       } catch (error) {
-
         if (error instanceof AssertionError) {
-          throw error
+          throw error;
         }
-        //  
+
         const hasSubstring =
           error.message.includes("NonceCheckFail") ||
           error.message.includes("Nonce") ||
           error.message.includes("nonce");
 
         expect(hasSubstring).to.be.true;
-
-        // await handleTxError(rawTxHash, accountAddress, error, provider);
       }
     }
 
+    it("nonce: 回绕", async function () {
+      const nonce = await provider.getTransactionCount(accountAddress);
+      // 与前一次使用相同的nonce   
+      await testNonceFieldInvalidCases(nonce - 1, this);
+    });
 
-    {
-      // Nonce 置零
+    it("nonce: 零值", async function () {
       const nonce = 0;
+      await testNonceFieldInvalidCases(nonce, this);
+    });
+
+    it("nonce: 跳跃", async function () {
+      const nonce = await provider.getTransactionCount(accountAddress);
+      // 使用比当前nonce大的值  
+      await testNonceFieldInvalidCases(nonce + 2, this);
+    });
+
+    it("nonce: 非法类型", async function () {
+      const invalidNonceList = [
+        "",  // 空字符串  
+        "HelloWorld，世界你好~！@#￥%……&*（）abcdefghijklmiopq63614101240054722004297811927860191653951076737992592011437881426126469238567698669271990135586095028951356841884186031262120223881211828646342895460926161383537",  // 非法长字符串  
+        1.1,  // 浮点数  
+        BigInt(1),  // BigInt  
+        NaN,  // NaN  
+        Infinity,  // Infinity  
+        null,  // null  
+        undefined,  // undefined  
+        [],  // 数组  
+        {},  // 对象  
+        () => { },  // 函数  
+        Symbol(),  // Symbol  
+        new Date(),  // Date  
+        new Error(),  // Error  
+      ];
+
+      for (const nonce of invalidNonceList) {
+        await testNonceFieldInvalidCases(nonce, this);
+      }
+    });
+
+    it("Nonce非法: 重放交易攻击", async function () {
+      const nonce = await provider.getTransactionCount(accountAddress);
+      // 重复使用相同的nonce发送交易  
+      await testNonceFieldInvalidCases(nonce, this);
+    });
+  });
+
+  describe("测试用例: value 字段", function () {
+    // 移除 async  
+    before(async function () {
+      // 在这里初始化需要在所有测试之前执行的异步操作  
+      this.chainId = parseInt(await provider.send('eth_chainId', []), 16);
+      this.feeData = await provider.getFeeData();
+      this.from = accountAddress;
+      this.to = contractAddress;
+      this.value = 0;
+      this.gasLimit = 22000000n;
+      this.data = emitEventData;
+      this.wallet = wallet;
+    });
+
+    async function testValueFieldInvalidCases(nonce, context) {
+      // 使用传入的上下文  
+      const { chainId, feeData, from, to, value, gasLimit, data, wallet } = context;
+
       // === 步骤: 创建签名交易 ===  
-      const { signedTx, rawTxHash } = createTransaction(
+      const { signedTx } = createTransaction(
         TransactionType.LegacyTx,
         chainId,
         nonce,
@@ -273,28 +317,12 @@ describe("Legacy Raw Transaction 测试集", function () {
 
       try {
         // === 步骤: 发送交易 ===  
-        const txHash = await provider.send("eth_sendRawTransaction", [signedTx]);
+        await provider.send("eth_sendRawTransaction", [signedTx]);
         expect(true).to.be.false;
-        // console.log("交易已发送，哈希:", txHash);
-        // expect(txHash).to.equal(rawTxHash);
-
-        // // === 步骤: 等待交易确认 ===  
-        // const receipt = await provider.waitForTransaction(txHash);
-
-        // // 校验from字段
-        // expect(receipt.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
-
-        // const transaction = await provider.getTransaction(txHash);
-        // expect(transaction).to.not.be.null;
-        // expect(transaction.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
-        // console.debug(" ### ===> transaction", transaction);
       } catch (error) {
-
         if (error instanceof AssertionError) {
-          throw error
+          throw error;
         }
-
-        // console.log(" ### ===> error", error);
 
         const hasSubstring =
           error.message.includes("NonceCheckFail") ||
@@ -302,15 +330,66 @@ describe("Legacy Raw Transaction 测试集", function () {
           error.message.includes("nonce");
 
         expect(hasSubstring).to.be.true;
-        // await handleTxError(rawTxHash, accountAddress, error, provider);
       }
     }
 
-    // Nonce 为字符串
-    {
-      const nonce = "HelloWorld，世界你好~！@#￥%……&*（）abcdefghijklmiopq63614101240054722004297811927860191653951076737992592011437881426126469238567698669271990135586095028951356841884186031262120223881211828646342895460926161383537";
+    it("value: 零值", async function () {
+      const nonce = 0;
+      await testValueFieldInvalidCases(nonce, this);
+    });
+
+    it("value: 负值", async function () {
+      const nonce = await provider.getTransactionCount(accountAddress);
+      // 使用比当前nonce大的值  
+      await testValueFieldInvalidCases(nonce + 2, this);
+    });
+
+    it("value: 非法类型", async function () {
+      const invalidValueList = [
+        "",  // 空字符串  
+        "HelloWorld，世界你好~！@#￥%……&*（）abcdefghijklmiopq63614101240054722004297811927860191653951076737992592011437881426126469238567698669271990135586095028951356841884186031262120223881211828646342895460926161383537",  // 非法长字符串  
+        1.1,  // 浮点数  
+        BigInt(1),  // BigInt  
+        NaN,  // NaN  
+        Infinity,  // Infinity  
+        null,  // null  
+        undefined,  // undefined  
+        [],  // 数组  
+        {},  // 对象  
+        () => { },  // 函数  
+        Symbol(),  // Symbol  
+        new Date(),  // Date  
+        new Error(),  // Error  
+      ];
+
+      for (const value of invalidValueList) {
+        await testNonceFieldInvalidCases(value, this);
+      }
+    });
+  });
+
+  describe("测试用例: to 字段", function () {
+    // 移除 async  
+    before(async function () {
+      // 在这里初始化需要在所有测试之前执行的异步操作  
+      this.chainId = parseInt(await provider.send('eth_chainId', []), 16);
+      this.feeData = await provider.getFeeData();
+      this.from = accountAddress;
+      this.to = contractAddress;
+      this.value = 0;
+      this.gasLimit = 22000000n;
+      this.data = emitEventData;
+      this.wallet = wallet;
+    });
+
+    async function testToFieldInvalidCases(to, context) {
+      // 使用传入的上下文  
+      const { chainId, feeData, from, to, value, gasLimit, data, wallet } = context;
+
+
+      nonce = await provider.getTransactionCount(accountAddress);
       // === 步骤: 创建签名交易 ===  
-      const { signedTx, rawTxHash } = createTransaction(
+      const { signedTx } = createTransaction(
         TransactionType.LegacyTx,
         chainId,
         nonce,
@@ -325,133 +404,56 @@ describe("Legacy Raw Transaction 测试集", function () {
 
       try {
         // === 步骤: 发送交易 ===  
-        const txHash = await provider.send("eth_sendRawTransaction", [signedTx]);
+        await provider.send("eth_sendRawTransaction", [signedTx]);
         expect(true).to.be.false;
-        // console.log("交易已发送，哈希:", txHash);
-        // expect(txHash).to.equal(rawTxHash);
-
-        // // === 步骤: 等待交易确认 ===  
-        // const receipt = await provider.waitForTransaction(txHash);
-
-        // // 校验from字段
-        // expect(receipt.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
-
-        // const transaction = await provider.getTransaction(txHash);
-        // expect(transaction).to.not.be.null;
-        // expect(transaction.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
-        // console.debug(" ### ===> transaction", transaction);
       } catch (error) {
-
         if (error instanceof AssertionError) {
-          throw error
+          throw error;
         }
 
-        console.log(" ### ===> error", error);
-        //  TODO: FB 异常 to do fix
         const hasSubstring =
           error.message.includes("NonceCheckFail") ||
           error.message.includes("Nonce") ||
           error.message.includes("nonce");
 
-        // expect(hasSubstring).to.be.true;
-        // await handleTxError(rawTxHash, accountAddress, error, provider);
+        expect(hasSubstring).to.be.true;
       }
     }
-  });
 
-  it("异常to", async function () {
-    // 合约地址不存在
-    const to = "0xD7F6a7b883eB17dD2B0Cd4628528Cd8c2C7A5111";
+    it("value: 零值", async function () {
+      const nonce = 0;
+      await testToFieldInvalidCases(nonce, this);
+    });
 
-    const chainId = parseInt(await provider.send('eth_chainId', []), 16);
-    const nonce = await provider.getTransactionCount(accountAddress);
-    const feeData = await provider.getFeeData();
-    const value = 0; // 不发送ETH  
-    const gasLimit = 22000000n; // 为合约部署设置合适的gas限制  
-    const from = accountAddress;
-    const data = emitEventData;
+    it("value: 负值", async function () {
+      const nonce = await provider.getTransactionCount(accountAddress);
+      // 使用比当前nonce大的值  
+      await testToFieldInvalidCases(nonce + 2, this);
+    });
 
-    // === 步骤: 创建交易 === 
-    const { signedTx, rawTxHash } = createTransaction(
-      TransactionType.LegacyTx,
-      chainId,
-      nonce,
-      feeData,
-      gasLimit,
-      from,
-      to,
-      value,
-      data,
-      wallet
-    );
+    it("to: 非法类型", async function () {
+      const invalidValueList = [
+        "",  // 空字符串  
+        "HelloWorld，世界你好~！@#￥%……&*（）abcdefghijklmiopq63614101240054722004297811927860191653951076737992592011437881426126469238567698669271990135586095028951356841884186031262120223881211828646342895460926161383537",  // 非法长字符串  
+        1.1,  // 浮点数  
+        BigInt(1),  // BigInt  
+        NaN,  // NaN  
+        Infinity,  // Infinity  
+        null,  // null  
+        undefined,  // undefined  
+        [],  // 数组  
+        {},  // 对象  
+        () => { },  // 函数  
+        Symbol(),  // Symbol  
+        new Date(),  // Date  
+        new Error(),  // Error  
+      ];
 
-    try {
-      // === 步骤: 发送交易 ===  
-      const txHash = await provider.send("eth_sendRawTransaction", [signedTx]);
-      console.log("交易已发送，哈希:", txHash);
-      expect(txHash).to.equal(rawTxHash);
-
-      // === 步骤: 等待交易确认 ===  
-      const receipt = await provider.waitForTransaction(txHash);
-
-      // TODO: FB 异常 to do fix
-      console.log("交易已执行，回执:", receipt);
-      // expect(1).to.not.equal(receipt.status);
-
-      // expect(false).to.be.true;
-    } catch (error) {
-
-      if (error instanceof AssertionError) {
-        throw error
+      for (const value of invalidValueList) {
+        await testToFieldInvalidCases(value, this);
       }
-      await handleTxError(rawTxHash, accountAddress, error, provider);
-    }
+    });
   });
-
-  it("异常value", async function () {
-
-    const chainId = parseInt(await provider.send('eth_chainId', []), 16);
-    console.log(" ### ===> chainId", chainId);
-    const nonce = await provider.getTransactionCount(accountAddress);
-    const feeData = await provider.getFeeData();
-    const to = contractAddress // 合约部署，to为null 
-    const value = "-1"; // 不发送ETH  
-    const gasLimit = 22000000n; // 为合约部署设置合适的gas限制  
-    const from = accountAddress;
-    const data = emitEventData;
-
-    // === 步骤: 创建交易 === 
-    const { signedTx, rawTxHash } = createTransaction(
-      TransactionType.LegacyTx,
-      chainId,
-      nonce,
-      feeData,
-      gasLimit,
-      from,
-      to,
-      value,
-      data,
-      wallet
-    );
-
-    try {
-      // === 步骤: 发送交易 ===  
-      const txHash = await provider.send("eth_sendRawTransaction", [signedTx]);
-      console.log("交易已发送，哈希:", txHash);
-      expect(txHash).to.equal(rawTxHash);
-
-      // === 步骤: 等待交易确认 ===  
-      const receipt = await provider.waitForTransaction(txHash);
-      console.log("交易已执行，回执:", receipt);
-
-      expect(false).to.be.true;
-    } catch (error) {
-
-      if (error instanceof AssertionError) {
-        throw error
-      }
-      await handleTxError(rawTxHash, accountAddress, error, provider);
-    }
-  });
+  */
 }
 );
