@@ -29,7 +29,7 @@ contract Empty {
 }
 */
 
-describe("Ethereum vs Potos: Data Structure Comparison", function () {
+describe("Ethereum vs Bcos: Data Structure Comparison", function () {
 
     // 测试的合约名字
     const contractName = "Empty";
@@ -236,35 +236,29 @@ describe("Ethereum vs Potos: Data Structure Comparison", function () {
         };
     }
 
+    /*
     // 普通交易
     it("Legacy Transaction", async function () {
 
-
-        const wallet1 = new ethers.Wallet(config.accounts[0], null);
-        // const accountAddress = wallet.address;
-
+        const bcosWallet = new ethers.Wallet(config.accounts[0], null);
         // fb 部署合约
-        const callEmptyContractFixture1 = createCallEmptyContractFixture(TransactionType.LegacyTx, wallet1, bcosnetProvider);
+        const bcosCallEmptyContractFixture = createCallEmptyContractFixture(TransactionType.LegacyTx, bcosWallet, bcosnetProvider);
         // const txHash = await loadFixture(callEmptyContractFixture);
         // console.log(" ### ===> txHash: ", txHash);
 
-        const { transaction: bcosTransaction, receipt: bcosReceipt, block: bcosBlock } = await getTxAndBlock(await loadFixture(callEmptyContractFixture1), bcosnetProvider)
+        const { transaction: bcosTransaction, receipt: bcosReceipt, block: bcosBlock } = await getTxAndBlock(await loadFixture(bcosCallEmptyContractFixture), bcosnetProvider)
 
         // console.log(" ### ===> transaction: ", transaction);
         // console.log(" ### ===> receipt: ", receipt);
         // console.log(" ### ===> block: ", block);
 
-
-
-        const wallet2 = new ethers.Wallet(config.accounts[0], null);
-        // const accountAddress = wallet.address;
-
+        const ethWallet = new ethers.Wallet(config.accounts[0], null);
         // hardhat 部署合约
-        const callEmptyContractFixture2 = createCallEmptyContractFixture(TransactionType.LegacyTx, wallet2, hardhatProvider);
+        const ethCallEmptyContractFixture = createCallEmptyContractFixture(TransactionType.LegacyTx, ethWallet, hardhatProvider);
         // const txHash = await loadFixture(callEmptyContractFixture);
         // console.log(" ### ===> txHash: ", txHash);
 
-        const { transaction: hardhatTransaction, receipt: hardhatReceipt, block: hardhatBlock } = await getTxAndBlock(await loadFixture(callEmptyContractFixture2), hardhatProvider)
+        const { transaction: hardhatTransaction, receipt: hardhatReceipt, block: hardhatBlock } = await getTxAndBlock(await loadFixture(ethCallEmptyContractFixture), hardhatProvider)
 
         // console.log(" ### ===> transaction1: ", transaction1);
         // console.log(" ### ===> transaction2: ", transaction2);
@@ -291,25 +285,66 @@ describe("Ethereum vs Potos: Data Structure Comparison", function () {
 
     });
 
+    */
 
     // EIP1559交易
-    it("EIP1559 Transaction", function () {
+    it("EIP1559 Transaction", async function () {
 
+        const bcosWallet = new ethers.Wallet(config.accounts[0], null);
+        // fb 部署合约
+        const bcosCallEmptyContractFixture = createCallEmptyContractFixture(TransactionType.Eip1559, bcosWallet, bcosnetProvider);
+        // const txHash = await loadFixture(callEmptyContractFixture);
+        // console.log(" ### ===> txHash: ", txHash);
 
+        const { transaction: bcosTransaction, receipt: bcosReceipt, block: bcosBlock } = await getTxAndBlock(await loadFixture(bcosCallEmptyContractFixture), bcosnetProvider)
+
+        // console.log(" ### ===> transaction: ", transaction);
+        // console.log(" ### ===> receipt: ", receipt);
+        // console.log(" ### ===> block: ", block);
+
+        const ethWallet = new ethers.Wallet(config.accounts[0], null);
+        // hardhat 部署合约
+        const ethCallEmptyContractFixture = createCallEmptyContractFixture(TransactionType.Eip1559, ethWallet, hardhatProvider);
+        // const txHash = await loadFixture(callEmptyContractFixture);
+        // console.log(" ### ===> txHash: ", txHash);
+
+        const { transaction: hardhatTransaction, receipt: hardhatReceipt, block: hardhatBlock } = await getTxAndBlock(await loadFixture(ethCallEmptyContractFixture), hardhatProvider)
+
+        // console.log(" ### ===> transaction1: ", transaction1);
+        // console.log(" ### ===> transaction2: ", transaction2);
+        // console.log(" ### ===> receipt: ", receipt);
+        // console.log(" ### ===> block: ", block);
+
+        // 交易参数对比
+        const txDiff = compareJsonObjects(bcosTransaction, hardhatTransaction);
+        // console.log(" ### ===> txDiff: ", txDiff);
+
+        // console.log(" ### ===> receipt1: ", receipt1);
+        // console.log(" ### ===> receipt2: ", receipt2);
+
+        // 交易回执对比 
+        const txReceiptDiff = compareJsonObjects(bcosReceipt, hardhatReceipt);
+        // console.log(" ### ===> txReceiptDiff: ", txReceiptDiff);
+
+        console.log(" ### ===> bcosBlock: ", JSON.stringify(bcosBlock));
+        console.log(" ### ===> hardhatBlock: ", JSON.stringify(hardhatBlock));
+
+        // 交易区块对比
+        const txBlockDiff = compareJsonObjects(bcosBlock, hardhatBlock);
+        console.log(" ### ===> txBlockDiff: ", txBlockDiff);
 
     });
 
     // EIP2930交易
-    it("EIP2930 Transaction", function () {
+    it("EIP2930 Transaction", async function () {
 
 
 
     });
 
     // EIP4844交易
-    it("EIP4844 Transaction", function () {
+    it("EIP4844 Transaction", async function () {
 
     });
-
 
 });

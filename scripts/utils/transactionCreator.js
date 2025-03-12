@@ -24,11 +24,11 @@ function createTransaction(txType, chainId, nonce, feeData, gasLimit, from, to, 
     if (txType === TransactionType.LegacyTx) {
         return createLegacyTransaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet);
     } else if (txType === TransactionType.Eip2930) {
-        return createEip2930Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet);
+        return createEip2930Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, [], wallet);
     } else if (txType === TransactionType.Eip1559) {
-        return createEip1559Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet);
+        return createEip1559Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, [], wallet);
     } else if (txType === TransactionType.Eip4844) {
-        return createEip4844Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet);
+        return createEip4844Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, [], wallet);
     } else {
         console.error("Invalid transaction type, " + txType);
         throw new Error("Invalid transaction type");
@@ -151,7 +151,7 @@ function createEip1559Transaction(chainId, nonce, feeData, gasLimit, from, to, v
 
     // console.log(" ### ===> feeData", feeData);
 
-    const maxFeePerGas = /*feeData.maxFeePerGas ||*/ ethers.parseUnits("0.0000003", "gwei");
+    const maxFeePerGas = /*feeData.maxFeePerGas ||*/ ethers.parseUnits("0.5", "gwei");
     const maxPriorityFeePerGas = /*feeData.maxPriorityFeePerGas ||*/ ethers.parseUnits("0.00000001", "gwei");
 
     // EIP1559 交易的字段顺序: 0x02 || rlp([chain_id, nonce, max_priority_fee_per_gas, max_fee_per_gas, gas_limit, destination, amount, data, access_list, signature_y_parity, signature_r, signature_s]) 
