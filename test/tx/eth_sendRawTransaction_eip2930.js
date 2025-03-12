@@ -129,7 +129,7 @@ describe("Send EIP-2930 Raw Transaction", function () {
                 throw error
             }
 
-            await handleError(rawTxHash, accountAddress, error, provider);
+            await handleTxError(rawTxHash, accountAddress, error, provider);
         }
     });
 });

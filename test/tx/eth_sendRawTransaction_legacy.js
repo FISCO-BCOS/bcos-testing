@@ -5,9 +5,10 @@ const { expect, AssertionError } = require("chai");
 //   parseSignedTransaction
 // } = require('../scripts/utils/transactionParser');
 const {
-  // createLegacyTransaction,
   createTransaction
 } = require('../../scripts/utils/transactionCreator');
+const { TransactionType } = require("../../scripts/utils/transactionType");
+const { handleTxError, handleTxOk } = require("../../scripts/utils/transactionHandler");
 
 describe("Legacy Raw Transaction 测试集", function () {
   // rpc provider  
@@ -82,7 +83,8 @@ describe("Legacy Raw Transaction 测试集", function () {
     const bytecode = contractArtifact.bytecode;  // 获取合约字节码 
 
     // === 步骤: 创建签名交易 ===  
-    const { signedTx, rawTxHash } = createLegacyTransaction(
+    const { signedTx, rawTxHash } = createTransaction(
+      TransactionType.LegacyTx,
       chainId,
       nonce,
       feeData,
@@ -116,17 +118,15 @@ describe("Legacy Raw Transaction 测试集", function () {
       // 校验from字段
       expect(receipt.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
 
-      const transaction = await provider.getTransaction(txHash);
-      expect(transaction).to.not.be.null;
-      expect(transaction.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
-      console.debug(" ### ===> transaction", transaction);
+      await handleTxOk(txHash, accountAddress, provider);
+
     } catch (error) {
 
       if (error instanceof AssertionError) {
         throw error
       }
 
-      await handleError(rawTxHash, accountAddress, error, provider);
+      await handleTxError(rawTxHash, accountAddress, error, provider);
     }
   });
 
@@ -147,7 +147,8 @@ describe("Legacy Raw Transaction 测试集", function () {
     const data = emitEventData;
 
     // === 步骤: 创建签名交易 ===  
-    const { signedTx, rawTxHash } = createLegacyTransaction(
+    const { signedTx, rawTxHash } = createTransaction(
+      TransactionType.LegacyTx,
       chainId,
       nonce,
       feeData,
@@ -177,17 +178,15 @@ describe("Legacy Raw Transaction 测试集", function () {
       // 校验from字段
       expect(receipt.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
 
-      const transaction = await provider.getTransaction(txHash);
-      expect(transaction).to.not.be.null;
-      expect(transaction.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
-      // console.debug(" ### ===> transaction", transaction);
+      await handleTxOk(txHash, accountAddress, provider);
+
     } catch (error) {
 
       if (error instanceof AssertionError) {
         throw error
       }
 
-      await handleError(rawTxHash, accountAddress, error, provider);
+      await handleTxError(rawTxHash, accountAddress, error, provider);
     }
   });
 
@@ -207,7 +206,8 @@ describe("Legacy Raw Transaction 测试集", function () {
       const nonce = await provider.getTransactionCount(accountAddress) - 1;
 
       // === 步骤: 创建签名交易 ===  
-      const { signedTx, rawTxHash } = createLegacyTransaction(
+      const { signedTx, rawTxHash } = createTransaction(
+        TransactionType.LegacyTx,
         chainId,
         nonce,
         feeData,
@@ -249,7 +249,7 @@ describe("Legacy Raw Transaction 测试集", function () {
 
         expect(hasSubstring).to.be.true;
 
-        // await handleError(rawTxHash, accountAddress, error, provider);
+        // await handleTxError(rawTxHash, accountAddress, error, provider);
       }
     }
 
@@ -258,7 +258,8 @@ describe("Legacy Raw Transaction 测试集", function () {
       // Nonce 置零
       const nonce = 0;
       // === 步骤: 创建签名交易 ===  
-      const { signedTx, rawTxHash } = createLegacyTransaction(
+      const { signedTx, rawTxHash } = createTransaction(
+        TransactionType.LegacyTx,
         chainId,
         nonce,
         feeData,
@@ -301,7 +302,7 @@ describe("Legacy Raw Transaction 测试集", function () {
           error.message.includes("nonce");
 
         expect(hasSubstring).to.be.true;
-        // await handleError(rawTxHash, accountAddress, error, provider);
+        // await handleTxError(rawTxHash, accountAddress, error, provider);
       }
     }
 
@@ -309,7 +310,8 @@ describe("Legacy Raw Transaction 测试集", function () {
     {
       const nonce = "HelloWorld，世界你好~！@#￥%……&*（）abcdefghijklmiopq63614101240054722004297811927860191653951076737992592011437881426126469238567698669271990135586095028951356841884186031262120223881211828646342895460926161383537";
       // === 步骤: 创建签名交易 ===  
-      const { signedTx, rawTxHash } = createLegacyTransaction(
+      const { signedTx, rawTxHash } = createTransaction(
+        TransactionType.LegacyTx,
         chainId,
         nonce,
         feeData,
@@ -352,7 +354,7 @@ describe("Legacy Raw Transaction 测试集", function () {
           error.message.includes("nonce");
 
         // expect(hasSubstring).to.be.true;
-        // await handleError(rawTxHash, accountAddress, error, provider);
+        // await handleTxError(rawTxHash, accountAddress, error, provider);
       }
     }
   });
@@ -370,7 +372,8 @@ describe("Legacy Raw Transaction 测试集", function () {
     const data = emitEventData;
 
     // === 步骤: 创建交易 === 
-    const { signedTx, rawTxHash } = createLegacyTransaction(
+    const { signedTx, rawTxHash } = createTransaction(
+      TransactionType.LegacyTx,
       chainId,
       nonce,
       feeData,
@@ -401,7 +404,7 @@ describe("Legacy Raw Transaction 测试集", function () {
       if (error instanceof AssertionError) {
         throw error
       }
-      await handleError(rawTxHash, accountAddress, error, provider);
+      await handleTxError(rawTxHash, accountAddress, error, provider);
     }
   });
 
@@ -418,7 +421,8 @@ describe("Legacy Raw Transaction 测试集", function () {
     const data = emitEventData;
 
     // === 步骤: 创建交易 === 
-    const { signedTx, rawTxHash } = createLegacyTransaction(
+    const { signedTx, rawTxHash } = createTransaction(
+      TransactionType.LegacyTx,
       chainId,
       nonce,
       feeData,
@@ -446,57 +450,8 @@ describe("Legacy Raw Transaction 测试集", function () {
       if (error instanceof AssertionError) {
         throw error
       }
-      await handleError(rawTxHash, accountAddress, error, provider);
+      await handleTxError(rawTxHash, accountAddress, error, provider);
     }
   });
 }
 );
-
-// ======== 工具函数 ========  
-
-/**
- * 处理交易失败的情况
- * 
- * @param {*} rawTxHash 
- * @param {*} accountAddress 
- * @param {*} error 
- * @param {*} provider 
- */
-async function handleError(rawTxHash, accountAddress, error, provider) {
-  /*
-        错误的格式示例:
-        error: {
-          code: -32603,
-          message: 'Error: Transaction reverted: non-payable function was called with value 1',
-          data: {
-            message: 'Error: Transaction reverted: non-payable function was called with value 1',
-            txHash: '0x824b0bb911fd7dea90ebfad89a4836422dab51f4b3cb0fb72a1d0502f68b1bd9',
-            data: '0x'
-          }
-        }
-        */
-
-  console.log(" ### ===> error", error);
-
-  const txHash = error?.error?.data?.txHash;
-  if (!txHash) {
-    console.log(" ### ===> 交易失败, 没有找到txHash", error);
-    // console.error(" ### ===> error", error);
-    expect(false).to.be.true;
-    return;
-  }
-
-  console.debug(" ### 交易失败, error", error);
-  expect(txHash).to.equal(rawTxHash);
-
-  const receipt = await provider.getTransactionReceipt(txHash);
-  expect(receipt).to.not.be.null;
-  expect(1).to.not.equal(receipt.status);
-  expect(receipt.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
-  // console.debug(" ### ===> receipt", receipt);
-
-  const transaction = await provider.getTransaction(txHash);
-  expect(transaction).to.not.be.null;
-  expect(transaction.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
-  // console.debug(" ### ===> transaction", transaction);
-}

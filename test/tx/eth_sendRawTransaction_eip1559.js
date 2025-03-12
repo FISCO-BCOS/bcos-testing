@@ -2,7 +2,6 @@ const { run, network, config } = require("hardhat")
 const { ethers, keccak256 } = require("ethers");
 const { expect, AssertionError } = require("chai");
 const { bytesToHex, hexToBytes } = require("ethereum-cryptography/utils");
-const RLP = require("@ethereumjs/rlp");
 const {
   parseSignedTransaction
 } = require('../../scripts/utils/transactionParser');
@@ -124,7 +123,7 @@ describe("Send EIP-1559 Raw Transaction", function () {
         throw error
       }
 
-      await handleError(rawTxHash, accountAddress, error, provider);
+      await handleTxError(rawTxHash, accountAddress, error, provider);
     }
   });
 
