@@ -1,8 +1,8 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("FallbackReceiveTest", function () {
-    let fallbackReceiveTest;
+describe("FallbackReceive", function () {
+    let fallbackReceive;
     let owner;
     let user1;
     let user2;
@@ -12,19 +12,21 @@ describe("FallbackReceiveTest", function () {
     const HALF_ETHER = ethers.parseEther("0.5");
     
     beforeEach(async function () {
-        [owner, user1, user2] = await ethers.getSigners();
+        [owner] = await ethers.getSigners();
+        user1 = owner;
+        user2 = owner;
         
         // 部署合约，发送1 ETH
-        const FallbackReceiveTest = await ethers.getContractFactory("FallbackReceiveTest");
-        fallbackReceiveTest = await FallbackReceiveTest.deploy({ value: ONE_ETHER });
-        await fallbackReceiveTest.waitForDeployment();
+        const FallbackReceive = await ethers.getContractFactory("FallbackReceive");
+        fallbackReceive = await FallbackReceive.deploy({ value: ONE_ETHER });
+        await fallbackReceive.waitForDeployment();
         
-        console.log("合约部署地址:", await fallbackReceiveTest.getAddress());
+        console.log("合约部署地址:", await fallbackReceive.getAddress());
     });
     
     describe("基本功能测试", function () {
         it("应该正确初始化合约", async function () {
-            const contractInfo = await fallbackReceiveTest.getContractInfo();
+            const contractInfo = await fallbackReceive.getContractInfo();
             
             expect(contractInfo[0]).to.equal(ONE_ETHER); // lastValueReceived
             expect(contractInfo[4]).to.equal(ONE_ETHER); // totalReceived
@@ -33,9 +35,9 @@ describe("FallbackReceiveTest", function () {
         
         it("应该能通过 deposit 函数接收 ETH", async function () {
             // 调用 deposit 函数发送 ETH
-            await fallbackReceiveTest.connect(user1).deposit({ value: HALF_ETHER });
+            await fallbackReceive.connect(user1).deposit({ value: HALF_ETHER });
             
-            const contractInfo = await fallbackReceiveTest.getContractInfo();
+            const contractInfo = await fallbackReceive.getContractInfo();
             
             expect(contractInfo[0]).to.equal(HALF_ETHER); // lastValueReceived
             expect(contractInfo[1]).to.equal("deposit"); // lastFunctionCalled
@@ -49,11 +51,11 @@ describe("FallbackReceiveTest", function () {
         it("应该通过 receive 函数处理纯 ETH 转账", async function () {
             // 直接发送 ETH 到合约地址
             await user1.sendTransaction({
-                to: await fallbackReceiveTest.getAddress(),
+                to: await fallbackReceive.getAddress(),
                 value: HALF_ETHER
             });
             
-            const contractInfo = await fallbackReceiveTest.getContractInfo();
+            const contractInfo = await fallbackReceive.getContractInfo();
             
             expect(contractInfo[0]).to.equal(HALF_ETHER); // lastValueReceived
             expect(contractInfo[1]).to.equal("receive"); // lastFunctionCalled
@@ -64,10 +66,10 @@ describe("FallbackReceiveTest", function () {
         it("应该能触发 Received 事件", async function () {
             // 监听事件
             await expect(user1.sendTransaction({
-                to: await fallbackReceiveTest.getAddress(),
+                to: await fallbackReceive.getAddress(),
                 value: HALF_ETHER
             }))
-            .to.emit(fallbackReceiveTest, "Received")
+            .to.emit(fallbackReceive, "Received")
             .withArgs(user1.address, HALF_ETHER, "receive");
         });
     });
@@ -78,12 +80,12 @@ describe("FallbackReceiveTest", function () {
             const nonExistentFunctionData = ethers.keccak256(ethers.toUtf8Bytes("nonExistentFunction()")).slice(0, 10);
             console.log("nonExistentFunctionData:", nonExistentFunctionData);
             await user1.sendTransaction({
-                to: await fallbackReceiveTest.getAddress(),
+                to: await fallbackReceive.getAddress(),
                 data: nonExistentFunctionData,
                 value: HALF_ETHER
             });
             
-            const contractInfo = await fallbackReceiveTest.getContractInfo();
+            const contractInfo = await fallbackReceive.getContractInfo();
             
             expect(contractInfo[0]).to.equal(HALF_ETHER); // lastValueReceived
             expect(contractInfo[1]).to.equal("fallback"); // lastFunctionCalled
@@ -96,11 +98,11 @@ describe("FallbackReceiveTest", function () {
             const nonExistentFunctionData = ethers.keccak256(ethers.toUtf8Bytes("nonExistentFunction()")).slice(0, 10);
             
             await expect(user1.sendTransaction({
-                to: await fallbackReceiveTest.getAddress(),
+                to: await fallbackReceive.getAddress(),
                 data: nonExistentFunctionData,
                 value: HALF_ETHER
             }))
-            .to.emit(fallbackReceiveTest, "FallbackCalled");
+            .to.emit(fallbackReceive, "FallbackCalled");
         });
     });
     
@@ -111,8 +113,8 @@ describe("FallbackReceiveTest", function () {
             console.log("getBalanceData:", getBalanceData);
             
             // 使用 testStaticCall 函数进行 staticcall
-            const result = await fallbackReceiveTest.testStaticCall(
-                await fallbackReceiveTest.getAddress(),
+            const result = await fallbackReceive.testStaticCall(
+                await fallbackReceive.getAddress(),
                 getBalanceData
             );
             
@@ -138,8 +140,8 @@ describe("FallbackReceiveTest", function () {
             const updateStateData = functionSelector + encodedParam;
             
             // 使用 testStaticCall 函数进行 staticcall
-            const result = await fallbackReceiveTest.testStaticCall(
-                await fallbackReceiveTest.getAddress(),
+            const result = await fallbackReceive.testStaticCall(
+                await fallbackReceive.getAddress(),
                 updateStateData
             );
             
@@ -150,16 +152,16 @@ describe("FallbackReceiveTest", function () {
     describe("payable 测试", function () {
         it("应该能通过多种方式接收 ETH", async function () {
             // 1. 通过 deposit 函数
-            await fallbackReceiveTest.connect(user1).deposit({ value: HALF_ETHER });
+            await fallbackReceive.connect(user1).deposit({ value: HALF_ETHER });
             
             // 2. 通过 receive 函数
             await user2.sendTransaction({
-                to: await fallbackReceiveTest.getAddress(),
+                to: await fallbackReceive.getAddress(),
                 value: HALF_ETHER
             });
             
             // 验证总余额
-            const balance = await ethers.provider.getBalance(await fallbackReceiveTest.getAddress());
+            const balance = await ethers.provider.getBalance(await fallbackReceive.getAddress());
             expect(balance).to.equal(ONE_ETHER + HALF_ETHER + HALF_ETHER);
         });
         
@@ -167,14 +169,14 @@ describe("FallbackReceiveTest", function () {
             const initialOwnerBalance = await ethers.provider.getBalance(owner.address);
             
             // 提取合约余额
-            const tx = await fallbackReceiveTest.withdraw();
+            const tx = await fallbackReceive.withdraw();
             const receipt = await tx.wait();
             
             // 计算 gas 成本
             const gasCost = receipt.gasUsed * receipt.gasPrice;
             
             // 验证合约余额为 0
-            const contractBalance = await ethers.provider.getBalance(await fallbackReceiveTest.getAddress());
+            const contractBalance = await ethers.provider.getBalance(await fallbackReceive.getAddress());
             expect(contractBalance).to.equal(0);
             
             // 验证所有者余额增加（减去 gas 成本）
@@ -189,19 +191,19 @@ describe("FallbackReceiveTest", function () {
     describe("综合测试", function () {
         it("应该能正确跟踪所有交互", async function () {
             // 1. 通过 deposit 发送 ETH
-            await fallbackReceiveTest.connect(user1).deposit({ value: HALF_ETHER });
+            await fallbackReceive.connect(user1).deposit({ value: HALF_ETHER });
             
             // 2. 更新状态
-            await fallbackReceiveTest.connect(user2).updateState("testFunction");
+            await fallbackReceive.connect(user2).updateState("testFunction");
             
             // 3. 通过 receive 发送 ETH
             await user1.sendTransaction({
-                to: await fallbackReceiveTest.getAddress(),
+                to: await fallbackReceive.getAddress(),
                 value: HALF_ETHER
             });
             
             // 验证最终状态
-            const contractInfo = await fallbackReceiveTest.getContractInfo();
+            const contractInfo = await fallbackReceive.getContractInfo();
             
             expect(contractInfo[0]).to.equal(HALF_ETHER); // lastValueReceived
             expect(contractInfo[1]).to.equal("receive"); // lastFunctionCalled
