@@ -31,7 +31,7 @@ const config = {
     bcosnet: {
       url: BCOSNET_URL,
       accounts: PRIVATE_KEY.length > 0 ? PRIVATE_KEY : [
-        "5dc86dbaa7a5a980edeca091bbe92638953ee4ea73cf5ea57329c6aa2f2821b5"
+        "5cf78aba3d1ba2fd1e6bedf1c0cf89b8f5ebf6da45edeb67099209f674e7fcfe"
       ],
       chainId: 20200
     },
