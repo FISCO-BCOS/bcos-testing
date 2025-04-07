@@ -7,7 +7,7 @@ const {
 const { TransactionType } = require("../../scripts/utils/transactionType");
 const { handleTxError, handleTxOk } = require("../../scripts/utils/transactionHandler");
 
-describe("EIP1599 Transaction 测试集", async function () {
+describe("EIP2930 Transaction 测试集", async function () {
   // rpc provider  
   let provider;
   // 钱包
@@ -36,7 +36,7 @@ describe("EIP1599 Transaction 测试集", async function () {
 
     // 私钥 (仅测试环境使用!)  
     const tempPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-    privateKey = config.accounts[0] || tempPrivateKey;
+    privateKey = network.config.accounts[0] || tempPrivateKey;
     // === 钱包 ===  
     wallet = new ethers.Wallet(privateKey, null);
     accountAddress = wallet.address;
@@ -92,9 +92,6 @@ describe("EIP1599 Transaction 测试集", async function () {
     );
 
     console.log(" ############# ===> rawTxHash", rawTxHash);
-
-    // === 步骤: 解析签名交易 === 
-    // parseSignedTransaction(signedTx)
 
     try {
       // === 步骤: 发送交易 ===  

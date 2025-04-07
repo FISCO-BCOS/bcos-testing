@@ -1,29 +1,34 @@
 const { expect } = require("chai");
+const { ethers } = require("hardhat");
 
 describe("BlockInfo", function () {
     let blockInfo;
     let owner;
+    let chainId;
 
     beforeEach(async function () {
         [owner] = await ethers.getSigners();
         // 检查账户余额
         const ownerBalance = await ethers.provider.getBalance(owner.address);
         console.log("Owner balance:", ethers.formatEther(ownerBalance));
-        
+
         const BlockInfo = await ethers.getContractFactory("BlockInfo");
         blockInfo = await BlockInfo.deploy();
         await blockInfo.waitForDeployment();
-        
+
+        chainId = (await ethers.provider.getNetwork()).chainId;
+
         console.log("合约部署地址:", await blockInfo.getAddress());
+        console.log("链id: " + chainId);
     });
 
     describe("区块信息测试", function () {
         it("应该能正确获取区块信息", async function () {
             const tx = await blockInfo.captureBlockInfo();
             const receipt = await tx.wait();
-            
+
             const blockData = await blockInfo.getLastBlockInfo();
-            
+
             console.log("\n=== 区块信息 ===");
             console.log("区块号:", blockData.number.toString());
             console.log("时间戳timestamp:", blockData.timestamp);
@@ -39,7 +44,8 @@ describe("BlockInfo", function () {
             // 验证时间戳是否为有效值
             expect(blockData.timestamp).to.be.gt(0);
             // 验证矿工地址是否为有效的以太坊地址
-            expect(blockData.coinbase).to.equal("0x0000000000000000000000000000000000000000");
+            expect(ethers.isAddress(blockData.coinbase)).to.be.true;
+            expect(blockData.coinbase).to.not.equal("0x0000000000000000000000000000000000000000");
             // 验证难度是否大于0
             expect(blockData.difficulty).to.be.gte(0);
             // 验证Gas限制是否大于0
@@ -51,7 +57,7 @@ describe("BlockInfo", function () {
             // 验证区块号是否正确
             expect(blockData.number).to.equal(receipt.blockNumber);
             // 验证chainId是否正确
-            expect(blockData.chainid).to.equal(20200); // FISCO BCOS的chainId
+            expect(blockData.chainid).to.equal(chainId); // FISCO BCOS的chainId
 
             // 验证Blob哈希
             expect(blockData.blobhash).to.match(/^0x[0-9a-f]{64}$/i);
@@ -77,9 +83,9 @@ describe("BlockInfo", function () {
             const value = ethers.parseEther("1.0");
             const tx = await blockInfo.captureCallInfo({ value: value });
             const receipt = await tx.wait();
-            
+
             const callData = await blockInfo.getLastCallInfo();
-            
+
             console.log("\n=== 调用信息 ===");
             console.log("调用者地址:", callData.msgSender);
             console.log("交易发起者:", callData.txOrigin);
