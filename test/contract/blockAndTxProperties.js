@@ -13,32 +13,19 @@ describe("Block and Tx Properties 测试集", function () {
     before(async function () {
         // 获取签名者  
         [owner] = await ethers.getSigners();
-
-        // 编译合约  
-        BlockAndTxProperties = await ethers.getContractFactory("BlockTxProperties");
     });
 
-    async function deployBlockAndTxPropertiesFixture() {
-        // const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-        // const ONE_GWEI = 1_000_000_000;
-
-        // const lockedAmount = ONE_GWEI;
-        // const unlockTime = (await time.latest()) + ONE_YEAR_IN_SECS;
-
-        // Contracts are deployed using the first signer/account by default
-        const [owner, otherAccount] = await ethers.getSigners();
-
+    // 自定义部署函数替代loadFixture  
+    async function deployContract() {
         const BlockTxProperties = await ethers.getContractFactory("BlockTxProperties");
         const blockTxProperties = await BlockTxProperties.deploy();
-
+        await blockTxProperties.waitForDeployment();
         return { blockTxProperties };
     }
 
     it("测试区块属性记录", async function () {
 
-        const { blockTxProperties } = await loadFixture(
-            deployBlockAndTxPropertiesFixture
-        );
+        const { blockTxProperties } = await deployContract();
 
         // 调用记录区块属性的函数  
         const tx = await blockTxProperties.updateBlockProperties();
@@ -51,9 +38,7 @@ describe("Block and Tx Properties 测试集", function () {
 
     it("测试交易属性记录", async function () {
 
-        const { blockTxProperties } = await loadFixture(
-            deployBlockAndTxPropertiesFixture
-        );
+        const { blockTxProperties } = await deployContract();
 
         // 调用记录区块属性的函数  
         const tx = await blockTxProperties.updateTransactionProperties();
