@@ -26,6 +26,9 @@ const config = {
   paths: {
     sources: "./contracts"
   },
+
+  accounts: PRIVATE_KEY.length > 0 ? [PRIVATE_KEY[0]] : [],
+
   defaultNetwork: "hardhat",
 
   networks: {

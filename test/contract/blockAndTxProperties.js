@@ -1,10 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-const {
-    loadFixture,
-} = require("@nomicfoundation/hardhat-toolbox/network-helpers");
-
 describe("Block and Tx Properties 测试集", function () {
     let BlockAndTxProperties;
     let blockAndTxProperties;
@@ -15,7 +11,7 @@ describe("Block and Tx Properties 测试集", function () {
         [owner] = await ethers.getSigners();
     });
 
-    // 自定义部署函数替代loadFixture  
+    // 自定义部署函数
     async function deployContract() {
         const BlockTxProperties = await ethers.getContractFactory("BlockTxProperties");
         const blockTxProperties = await BlockTxProperties.deploy();

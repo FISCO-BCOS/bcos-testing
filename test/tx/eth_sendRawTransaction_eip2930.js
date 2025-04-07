@@ -33,10 +33,11 @@ describe("EIP2930 Transaction 测试集", async function () {
     const name = network.name;
     // 打印网络信息
     // console.log(" ### ===> network", network);
+    // console.log(" ### ===> network.config", network.config);
 
     // 私钥 (仅测试环境使用!)  
     const tempPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-    privateKey = network.config.accounts[0] || tempPrivateKey;
+    privateKey = config.accounts[0] || tempPrivateKey;
     // === 钱包 ===  
     wallet = new ethers.Wallet(privateKey, null);
     accountAddress = wallet.address;
@@ -58,8 +59,6 @@ describe("EIP2930 Transaction 测试集", async function () {
 
     // === rpc provider ===  
     provider = new ethers.JsonRpcProvider(url, { chainId: chainId, name: name }, { staticNetwork: true });
-
-    accountNonce = await provider.getTransactionCount(accountAddress);
   });
 
   it("部署合约", async function () {

@@ -1,5 +1,5 @@
 // transactionCreator.js  
-const { ethers } = require("ethers");
+const { ethers, toBeArray } = require("ethers");
 const { keccak256 } = require("ethereum-cryptography/keccak");
 const { bytesToHex, hexToBytes } = require("ethereum-cryptography/utils");
 const RLP = require("@ethereumjs/rlp");
@@ -122,6 +122,40 @@ function createLegacyTransaction(chainId, nonce, feeData, gasLimit, from, to, va
     //  从签名中提取r, s, v  
     const r = signature.r;
     const s = signature.s;
+
+    let normalizedR = toBeArray(r);
+    let normalizedS = toBeArray(s);
+
+    /*
+    // 处理签名组件 - 规范化签名值（移除前导零）  
+    let normalizedR = r;
+    let normalizedS = s;
+
+    // 如果r和s是十六进制字符串，移除前导零  
+    if (typeof r === 'string' && r.startsWith('0x')) {
+        // 移除0x前缀  
+        let rValue = r.substring(2);
+        // 移除前导零，但确保保留至少一个数字  
+        while (rValue.startsWith('0') && rValue.length > 1) {
+            rValue = rValue.substring(1);
+        }
+        normalizedR = '0x' + rValue;
+    }
+
+    if (typeof s === 'string' && s.startsWith('0x')) {
+        // 移除0x前缀  
+        let sValue = s.substring(2);
+        // 移除前导零，但确保保留至少一个数字  
+        while (sValue.startsWith('0') && sValue.length > 1) {
+            sValue = sValue.substring(1);
+        }
+        normalizedS = '0x' + sValue;
+    }
+    */
+
+    // // 构建包含签名的完整交易字段  
+    // const signedFields = [...fields, y, normalizedR, normalizedS];
+
     /*
     // 计算v值 - Legacy交易的v值计算: recoveryId + chainId * 2 + 35  
     static getChainIdV(chainId: BigNumberish, v: 27 | 28): bigint {
@@ -139,8 +173,8 @@ function createLegacyTransaction(chainId, nonce, feeData, gasLimit, from, to, va
         value,
         data || "0x",
         v,
-        r,
-        s
+        normalizedR,
+        normalizedS
     ];
 
     // RLP编码签名后的交易  
@@ -225,8 +259,41 @@ function createEip1559Transaction(chainId, nonce, feeData, gasLimit, from, to, v
     const r = signature.r;
     const s = signature.s;
     const y = signature.yParity;
+
+    let normalizedR = toBeArray(r);
+    let normalizedS = toBeArray(s);
+    /*
+    // 处理签名组件 - 规范化签名值（移除前导零）  
+    let normalizedR = r;
+    let normalizedS = s;
+
+    // 如果r和s是十六进制字符串，移除前导零  
+    if (typeof r === 'string' && r.startsWith('0x')) {
+        // 移除0x前缀  
+        let rValue = r.substring(2);
+        // 移除前导零，但确保保留至少一个数字  
+        while (rValue.startsWith('0') && rValue.length > 1) {
+            rValue = rValue.substring(1);
+        }
+        normalizedR = '0x' + rValue;
+    }
+
+    if (typeof s === 'string' && s.startsWith('0x')) {
+        // 移除0x前缀  
+        let sValue = s.substring(2);
+        // 移除前导零，但确保保留至少一个数字  
+        while (sValue.startsWith('0') && sValue.length > 1) {
+            sValue = sValue.substring(1);
+        }
+        normalizedS = '0x' + sValue;
+    }
+    */
+
     // 构建包含签名的完整交易字段  
-    const signedFields = [...fields, y, r, s];
+    const signedFields = [...fields, y, normalizedR, normalizedS];
+
+    // 构建包含签名的完整交易字段  
+    // const signedFields = [...fields, y, r, s];
 
     console.log(" ### ===> signedFields", signedFields);
 
@@ -308,8 +375,42 @@ function createEip2930Transaction(chainId, nonce, feeData, gasLimit, from, to, v
     const r = signature.r;
     const s = signature.s;
     const y = signature.yParity;
+
+    let normalizedR = toBeArray(r);
+    let normalizedS = toBeArray(s);
+
+    /*
+    // 处理签名组件 - 规范化签名值（移除前导零）  
+    let normalizedR = r;
+    let normalizedS = s;
+
+    // 如果r和s是十六进制字符串，移除前导零  
+    if (typeof r === 'string' && r.startsWith('0x')) {
+        // 移除0x前缀  
+        let rValue = r.substring(2);
+        // 移除前导零，但确保保留至少一个数字  
+        while (rValue.startsWith('0') && rValue.length > 1) {
+            rValue = rValue.substring(1);
+        }
+        normalizedR = '0x' + rValue;
+    }
+
+    if (typeof s === 'string' && s.startsWith('0x')) {
+        // 移除0x前缀  
+        let sValue = s.substring(2);
+        // 移除前导零，但确保保留至少一个数字  
+        while (sValue.startsWith('0') && sValue.length > 1) {
+            sValue = sValue.substring(1);
+        }
+        normalizedS = '0x' + sValue;
+    }
+    */
+
     // 构建包含签名的完整交易字段  
-    const signedFields = [...fields, y, r, s];
+    const signedFields = [...fields, y, normalizedR, normalizedS];
+
+    // 构建包含签名的完整交易字段  
+    // const signedFields = [...fields, y, r, s];
 
     console.log(" ### ===> signedFields", signedFields);
 

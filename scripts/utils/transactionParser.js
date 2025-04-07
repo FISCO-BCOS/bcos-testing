@@ -14,6 +14,16 @@ function parseSignedTransaction(rawTxHash, rawTx, verbose = true) {
         // 解析交易  
         const parsedTx = ethers.Transaction.from(rawTx)
 
+        // console.log("parsedTx: " + parsedTx)
+
+        // 基本用法
+        // console.log(JSON.stringify(parsedTx));
+
+        // 格式化输出 (带缩进)
+        console.log("parsedTx: ")
+        console.log(JSON.stringify(parsedTx, null, 2));
+
+
         // 格式化辅助函数  
         const formatEther = ethers.formatEther;
         const formatUnits = ethers.formatUnits;
@@ -36,12 +46,14 @@ function parseSignedTransaction(rawTxHash, rawTx, verbose = true) {
             }
         };
 
+        console.log("tx type: " + parsedTx.type)
+
         // 添加特定交易类型的字段  
         if (parsedTx.type === 0 || parsedTx.type === undefined) {
-            result.gasPrice = formatUnits(parsedTx.gasPrice, "gwei");
+            result.gasPrice = parsedTx.gasPrice //formatUnits(parsedTx.gasPrice, "gwei");
         }
         else if (parsedTx.type === 1) {
-            result.gasPrice = formatUnits(parsedTx.gasPrice, "gwei");
+            result.gasPrice = parsedTx.gasPrice //formatUnits(parsedTx.gasPrice, "gwei");
             result.accessList = parsedTx.accessList;
         }
         else if (parsedTx.type === 2) {
@@ -119,6 +131,10 @@ function parseSignedTransaction(rawTxHash, rawTx, verbose = true) {
                 }
             }
         }
+
+
+        console.log(" tx decode txHash: ", txHash);
+        console.log(" tx decode serialized tx: ", serialized);
 
         if (txHash !== rawTxHash) {
             console.log(" ERROR ### rawTxHash: ", rawTxHash);
