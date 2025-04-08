@@ -124,10 +124,7 @@ describe("EIP1599 Transaction 测试集", async function () {
   it("调用合约接口", async function () {
 
     const nonce = await provider.getTransactionCount(accountAddress);
-    console.log(" ### ===> nonce", nonce);
-
     const chainId = parseInt(await provider.send('eth_chainId', []), 16);
-    console.log(" ### ===> chainId", chainId);
 
     const feeData = await provider.getFeeData();
     const from = accountAddress;

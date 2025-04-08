@@ -60,13 +60,43 @@ function createTransactionInner(txType, chainId, nonce, feeData, gasLimit, from,
         return createEip2930Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, [], wallet);
     } else if (txType === TransactionType.Eip1559) {
         return createEip1559Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, [], wallet);
-    } else if (txType === TransactionType.Eip4844) {
-        return createEip4844Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, [], wallet);
     } else {
         console.error("Invalid transaction type, " + txType);
         throw new Error("Invalid transaction type: " + txType);
     }
 }
+
+/**
+ * 创建交易并签名交易
+ * 
+ * @param {*} txType 
+ * @param {*} chainId 
+ * @param {*} nonce 
+ * @param {*} feeData 
+ * @param {*} gasLimit 
+ * @param {*} from 
+ * @param {*} to 
+ * @param {*} value 
+ * @param {*} data  
+ * @param {*} r 
+ * @param {*} s
+ * @param {*} y
+ * @returns 
+ */
+function createTransactionInnerWithSign(txType, chainId, nonce, feeData, gasLimit, from, to, value, data, r, s, y) {
+
+    if (txType === TransactionType.LegacyTx) {
+        return createLegacyTransactionWithSig(chainId, nonce, feeData, gasLimit, from, to, value, data, r, s, y);
+    } else if (txType === TransactionType.Eip2930) {
+        return createEip2930TransactionWithSig(chainId, nonce, feeData, gasLimit, from, to, value, data, [], r, s, y);
+    } else if (txType === TransactionType.Eip1559) {
+        return createEip1559TransactionWithSig(chainId, nonce, feeData, gasLimit, from, to, value, data, [], r, s, y);
+    } else {
+        console.error("Invalid transaction type, " + txType);
+        throw new Error("Invalid transaction type: " + txType);
+    }
+}
+
 
 /**
  * 创建交易并签名交易
@@ -83,8 +113,6 @@ function createTransactionInner(txType, chainId, nonce, feeData, gasLimit, from,
  * @returns 
  */
 function createLegacyTransaction(chainId, nonce, feeData, gasLimit, from, to, value, data, wallet) {
-
-    //TODO:
     // const gasPrice = ethers.parseUnits("0.0003", "gwei");
     const gasPrice = feeData.gasPrice || ethers.parseUnits("0.0000003", "gwei");
 
@@ -122,6 +150,57 @@ function createLegacyTransaction(chainId, nonce, feeData, gasLimit, from, to, va
     //  从签名中提取r, s, v  
     const r = signature.r;
     const s = signature.s;
+    const v = BigInt(chainId) * 2n + BigInt(35 + signature.v - 27);
+
+    return createLegacyTransactionWithSig(chainId, nonce, feeData, gasLimit, from, to, value, data, r, s, v)
+}
+
+
+/**
+ * 创建交易
+ * 
+ * @param {*} chainId 
+ * @param {*} nonce 
+ * @param {*} feeData 
+ * @param {*} gasLimit 
+ * @param {*} from 
+ * @param {*} to 
+ * @param {*} value 
+ * @param {*} data  
+ * @param {*} r 
+ * @param {*} s
+ * @param {*} v
+ * @returns 
+ */
+function createLegacyTransactionWithSig(chainId, nonce, feeData, gasLimit, from, to, value, data, r, s, v) {
+    const gasPrice = feeData.gasPrice || ethers.parseUnits("0.0000003", "gwei");
+
+    // Legacy交易的字段顺序: [nonce, gasPrice, gasLimit, to, value, data, v, r, s]  
+    const fields = [
+        nonce,
+        gasPrice, // 使用gasPrice替代maxFeePerGas 
+        gasLimit,
+        to || "0x",
+        value,
+        data || "0x",
+        chainId,    // v 值在未签名时是chainId  
+        "0x",              // r 值在未签名时是0x  
+        "0x"               // s 值在未签名时是0x  
+    ];
+
+    // 打印每个字段，用于调试  
+    console.debug("Legacy Transaction Fields:", {
+        nonce: fields[0],
+        gasPrice: fields[1],
+        gasLimit: fields[2],
+        to: fields[3],
+        value: fields[4],
+        data: fields[5].substring(0, 20) + "...", // 截断数据显示  
+        chainId: fields[6],
+        r: r,
+        s: s,
+        v: v
+    });
 
     let normalizedR = toBeArray(r);
     let normalizedS = toBeArray(s);
@@ -162,7 +241,6 @@ function createLegacyTransaction(chainId, nonce, feeData, gasLimit, from, to, va
       return (getBigInt(chainId) * BN_2) + BigInt(35 + v - 27);
     }
     */
-    const v = BigInt(chainId) * 2n + BigInt(35 + signature.v - 27);
 
     // 构建包含签名的完整交易字段  
     const signedFields = [
@@ -214,6 +292,70 @@ function createLegacyTransaction(chainId, nonce, feeData, gasLimit, from, to, va
  */
 function createEip1559Transaction(chainId, nonce, feeData, gasLimit, from, to, value, data, accessList, wallet) {
 
+    const maxFeePerGas = /*feeData.maxFeePerGas ||*/ ethers.parseUnits("0.5", "gwei");
+    const maxPriorityFeePerGas = /*feeData.maxPriorityFeePerGas ||*/ ethers.parseUnits("0.00000001", "gwei");
+
+    // EIP1559 交易的字段顺序: 0x02 || rlp([chain_id, nonce, max_priority_fee_per_gas, max_fee_per_gas, gas_limit, destination, amount, data, access_list, signature_y_parity, signature_r, signature_s]) 
+    const fields = [
+        chainId,
+        nonce,
+        maxPriorityFeePerGas,
+        maxFeePerGas,
+        gasLimit,
+        to || "0x",
+        value,
+        data || "0x",
+        accessList || []
+    ];
+
+    // 打印每个字段，用于调试
+    // console.log("EIP-1559 Transaction Fields:", {
+    //     chainId: fields[0],
+    //     nonce: fields[1],
+    //     maxPriorityFeePerGas: fields[2],
+    //     maxFeePerGas: fields[3],
+    //     gasLimit: fields[4],
+    //     to: fields[5],
+    //     value: fields[6],
+    //     data: fields[7].substring(0, 20) + "...",
+    //     accessList: fields[8]
+    // });
+
+    // RLP encode transaction fields
+    const rlpEncoded = RLP.encode(fields);
+
+    const txType = Buffer.from([2]); // EIP-1559类型前缀
+    const dataToHash = Buffer.concat([txType, Buffer.from(rlpEncoded)]);
+    const txHash = keccak256(dataToHash);
+
+    // 签名哈希  
+    const signature = wallet.signingKey.sign(txHash);
+    const r = signature.r;
+    const s = signature.s;
+    const y = signature.yParity;
+
+    return createEip1559TransactionWithSig(chainId, nonce, feeData, gasLimit, from, to, value, data, accessList, r, s, y);
+}
+
+/**
+ * 创建EIP-1559交易并签名交易
+ * 
+ * @param {*} chainId 
+ * @param {*} nonce 
+ * @param {*} feeData 
+ * @param {*} gasLimit 
+ * @param {*} from 
+ * @param {*} to 
+ * @param {*} value 
+ * @param {*} data  
+ * @param {*} accessList 
+ * @param {*} r 
+ * @param {*} s
+ * @param {*} y
+ * @returns 
+ */
+function createEip1559TransactionWithSig(chainId, nonce, feeData, gasLimit, from, to, value, data, accessList, r, s, yParity) {
+
     // const gasPrice = feeData.gasPrice || ethers.parseUnits("30", "gwei");
 
     // console.log(" ### ===> feeData", feeData);
@@ -244,22 +386,13 @@ function createEip1559Transaction(chainId, nonce, feeData, gasLimit, from, to, v
         to: fields[5],
         value: fields[6],
         data: fields[7].substring(0, 20) + "...",
-        accessList: fields[8]
+        accessList: fields[8],
+        r: r,
+        s: s,
+        y: yParity
     });
 
-    // RLP encode transaction fields
-    const rlpEncoded = RLP.encode(fields);
-
-    const txType = Buffer.from([2]); // EIP-1559类型前缀
-    const dataToHash = Buffer.concat([txType, Buffer.from(rlpEncoded)]);
-    const txHash = keccak256(dataToHash);
-
-    // 签名哈希  
-    const signature = wallet.signingKey.sign(txHash);
-    const r = signature.r;
-    const s = signature.s;
-    const y = signature.yParity;
-
+    const y = yParity;
     let normalizedR = toBeArray(r);
     let normalizedS = toBeArray(s);
     /*
@@ -291,12 +424,6 @@ function createEip1559Transaction(chainId, nonce, feeData, gasLimit, from, to, v
 
     // 构建包含签名的完整交易字段  
     const signedFields = [...fields, y, normalizedR, normalizedS];
-
-    // 构建包含签名的完整交易字段  
-    // const signedFields = [...fields, y, r, s];
-
-    console.log(" ### ===> signedFields", signedFields);
-
     // RLP编码签名后的交易
     const signedRlpEncoded = RLP.encode(signedFields);
 
@@ -315,7 +442,6 @@ function createEip1559Transaction(chainId, nonce, feeData, gasLimit, from, to, v
         rawTxHash: rawTxHash
     };
 }
-
 
 /**
  * 创建EIP-2930交易并签名交易
@@ -374,11 +500,61 @@ function createEip2930Transaction(chainId, nonce, feeData, gasLimit, from, to, v
     const signature = wallet.signingKey.sign(txHash);
     const r = signature.r;
     const s = signature.s;
-    const y = signature.yParity;
+    const yParity = signature.yParity;
+
+    return createEip2930TransactionWithSig(chainId, nonce, feeData, gasLimit, from, to, value, data, accessList, r, s, yParity);
+}
+
+/**
+ * 创建EIP-2930交易
+ * 
+ * @param {*} chainId 
+ * @param {*} nonce 
+ * @param {*} feeData 
+ * @param {*} gasLimit 
+ * @param {*} from 
+ * @param {*} to 
+ * @param {*} value 
+ * @param {*} data  
+ * @param {*} accessList 
+ * @param {*} r
+ * @param {*} s 
+ * @param {*} yParity
+ * @returns 
+ */
+function createEip2930TransactionWithSig(chainId, nonce, feeData, gasLimit, from, to, value, data, accessList, r, s, yParity) {
+
+    const gasPrice = feeData.gasPrice || ethers.parseUnits("30", "gwei");
+
+    // 0x01 || rlp([chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, signatureYParity, signatureR, signatureS])
+    const fields = [
+        chainId,
+        nonce,
+        gasPrice,
+        gasLimit,
+        to || "0x",
+        value,
+        data || "0x",
+        accessList || []
+    ];
+
+    // 打印每个字段，用于调试
+    console.log("EIP-2930 Transaction Fields:", {
+        chainId: fields[0],
+        nonce: fields[1],
+        gasPrice: fields[2],
+        gasLimit: fields[3],
+        to: fields[4],
+        value: fields[5],
+        data: fields[6].substring(0, 20) + "...",
+        accessList: fields[7],
+        r: r,
+        s: s,
+        yParity: yParity
+    });
 
     let normalizedR = toBeArray(r);
     let normalizedS = toBeArray(s);
-
     /*
     // 处理签名组件 - 规范化签名值（移除前导零）  
     let normalizedR = r;
@@ -407,12 +583,7 @@ function createEip2930Transaction(chainId, nonce, feeData, gasLimit, from, to, v
     */
 
     // 构建包含签名的完整交易字段  
-    const signedFields = [...fields, y, normalizedR, normalizedS];
-
-    // 构建包含签名的完整交易字段  
-    // const signedFields = [...fields, y, r, s];
-
-    console.log(" ### ===> signedFields", signedFields);
+    const signedFields = [...fields, yParity, normalizedR, normalizedS];
 
     // RLP编码签名后的交易
     const signedRlpEncoded = RLP.encode(signedFields);
