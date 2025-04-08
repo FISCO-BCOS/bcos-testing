@@ -26,6 +26,15 @@ describe("Legacy Raw Transaction 测试集", async function () {
   let contractAbi;
   let emitEventData;
 
+  let currentNonce;
+
+  function getNextNonce(account) {
+    // const nonce = await provider.getTransactionCount(account);
+    let nonce = currentNonce;
+    currentNonce += 1;
+    return nonce;
+  }
+
   this.beforeAll(async function () {
     // 初始化参数
     const chainId = network.config.chainId;
@@ -56,6 +65,9 @@ describe("Legacy Raw Transaction 测试集", async function () {
 
     // === rpc provider ===  
     provider = new ethers.JsonRpcProvider(url, { chainId: chainId, name: name }, { staticNetwork: true });
+
+    const nonce = await provider.getTransactionCount(accountAddress);
+    currentNonce = nonce;
   });
 
   it("部署合约", async function () {
@@ -65,7 +77,7 @@ describe("Legacy Raw Transaction 测试集", async function () {
 
     // === 步骤: 交易参数 ===  
     const chainId = parseInt(await provider.send('eth_chainId', []), 16);
-    const nonce = await provider.getTransactionCount(accountAddress);
+    const nonce = getNextNonce();
     const feeData = await provider.getFeeData();
     const from = accountAddress;
     const to = null; // 合约部署，to为null 
@@ -86,8 +98,6 @@ describe("Legacy Raw Transaction 测试集", async function () {
       bytecode,
       wallet
     );
-
-    console.log(" ############# ===> rawTxHash", rawTxHash);
 
     try {
       // === 步骤: 发送交易 ===  
@@ -121,7 +131,7 @@ describe("Legacy Raw Transaction 测试集", async function () {
   // 部署合约测试
   it("调用合约接口", async function () {
 
-    const nonce = await provider.getTransactionCount(accountAddress);
+    const nonce = getNextNonce();
 
     const chainId = parseInt(await provider.send('eth_chainId', []), 16);
 
