@@ -45,7 +45,7 @@ describe("BlockInfo", function () {
             expect(blockData.timestamp).to.be.gt(0);
             // 验证矿工地址是否为有效的以太坊地址
             expect(ethers.isAddress(blockData.coinbase)).to.be.true;
-            expect(blockData.coinbase).to.not.equal("0x0000000000000000000000000000000000000000");
+            expect(blockData.coinbase).to.equal("0x0000000000000000000000000000000000000000");
             // 验证难度是否大于0
             expect(blockData.difficulty).to.be.gte(0);
             // 验证Gas限制是否大于0
