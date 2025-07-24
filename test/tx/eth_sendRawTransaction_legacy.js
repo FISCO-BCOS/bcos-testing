@@ -64,7 +64,11 @@ describe("Legacy Raw Transaction 测试集", async function () {
     emitEventData = new ethers.Interface(contractAbi).encodeFunctionData("emitEvent", []);
 
     // === rpc provider ===  
-    provider = new ethers.JsonRpcProvider(url, { chainId: chainId, name: name }, { staticNetwork: true });
+    if (url.startsWith("ws") || url.startsWith("wss")) {
+      provider = new ethers.WebSocketProvider(url, { chainId: chainId, name: name }, { staticNetwork: true });
+    } else {
+      provider = new ethers.JsonRpcProvider(url, { chainId: chainId, name: name }, { staticNetwork: true });
+    }
 
     const nonce = await provider.getTransactionCount(accountAddress);
     currentNonce = nonce;

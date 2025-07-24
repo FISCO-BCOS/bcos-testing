@@ -41,7 +41,7 @@ describe("EIP1599 Transaction 测试集", async function () {
     const url = network.config.url;
     const name = network.name;
     // 打印网络信息
-    // console.log(" ### ===> network", network);
+    console.log(" ### ===> network", network);
 
     // 私钥 (仅测试环境使用!)  
     const tempPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
@@ -66,7 +66,11 @@ describe("EIP1599 Transaction 测试集", async function () {
     emitEventData = new ethers.Interface(contractAbi).encodeFunctionData("emitEvent", []);
 
     // === rpc provider ===  
-    provider = new ethers.JsonRpcProvider(url, { chainId: chainId, name: name }, { staticNetwork: true });
+    if (url.startsWith("ws") || url.startsWith("wss")) {
+      provider = new ethers.WebSocketProvider(url, { chainId: chainId, name: name }, { staticNetwork: true });
+    } else {
+      provider = new ethers.JsonRpcProvider(url, { chainId: chainId, name: name }, { staticNetwork: true });
+    }
 
     const nonce = await provider.getTransactionCount(accountAddress);
     currentNonce = nonce;
