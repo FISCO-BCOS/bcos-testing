@@ -26,15 +26,6 @@ describe("EIP2930 Transaction 测试集", async function () {
   let contractAbi;
   let emitEventData;
 
-  let currentNonce;
-
-  function getNextNonce(account) {
-    // const nonce = await provider.getTransactionCount(account);
-    let nonce = currentNonce;
-    currentNonce += 1;
-    return nonce;
-  }
-
   this.beforeAll(async function () {
     // 初始化参数
     const chainId = network.config.chainId;
@@ -67,14 +58,23 @@ describe("EIP2930 Transaction 测试集", async function () {
     emitEventData = new ethers.Interface(contractAbi).encodeFunctionData("emitEvent", []);
 
     // === rpc provider ===  
-    if (url.startsWith("ws") || url.startsWith("wss")) {
-      provider = new ethers.WebSocketProvider(url, { chainId: chainId, name: name }, { staticNetwork: true });
+    if (/^wss?:\/\//.test(url)) {
+      provider = new ethers.WebSocketProvider(url, { chainId: chainId, name: name });
+      provider.on("block", (blockNumber) => {
+        console.log("New block:", blockNumber);
+      });
+      provider.on("error", (error) => {
+        console.error("Provider error:", error);
+      });
+      // provider.off("block", (blockNumber) => {
+      //   console.log("New block:", blockNumber);
+      // });
+      // provider.off("error", (error) => {
+      //   console.error("Provider error:", error);
+      // });
     } else {
-      provider = new ethers.JsonRpcProvider(url, { chainId: chainId, name: name }, { staticNetwork: true });
+      provider = new ethers.JsonRpcProvider(url, { chainId: chainId, name: name });
     }
-
-    const nonce = await provider.getTransactionCount(accountAddress);
-    currentNonce = nonce;
   });
 
   it("部署合约", async function () {
@@ -84,7 +84,7 @@ describe("EIP2930 Transaction 测试集", async function () {
 
     // === 步骤: 交易参数 ===  
     const chainId = parseInt(await provider.send('eth_chainId', []), 16);
-    const nonce = getNextNonce();
+    const nonce = await provider.getTransactionCount(accountAddress);
     const feeData = await provider.getFeeData();
     const from = accountAddress;
     const to = null; // 合约部署，to为null 
@@ -138,60 +138,66 @@ describe("EIP2930 Transaction 测试集", async function () {
   // 部署合约测试
   it("调用合约接口", async function () {
 
-    const nonce = getNextNonce();
+    const nonce = await provider.getTransactionCount(accountAddress);
 
     const chainId = parseInt(await provider.send('eth_chainId', []), 16);
 
-    const feeData = await provider.getFeeData();
-    const from = accountAddress;
-    const to = contractAddress; // 合约部署，to为null 
-    const value = 0; // 不发送ETH  
-    const gasLimit = 22000000n; // 为合约部署设置合适的gas限制  
-    const data = emitEventData;
+    // loop for 10 times
+    for (let i = 0; i < 5; i++) {
 
-    // === 步骤: 创建签名交易 ===  
-    const { signedTx, rawTxHash } = createTransaction(
-      TransactionType.Eip2930,
-      chainId,
-      nonce,
-      feeData,
-      gasLimit,
-      from,
-      to,
-      value,
-      data,
-      wallet
-    );
+      const nonce = await provider.getTransactionCount(accountAddress);
+      const feeData = await provider.getFeeData();
+      const from = accountAddress;
+      const to = contractAddress; // 合约部署，to为null 
+      const value = 0; // 不发送ETH  
+      const gasLimit = 22000000n; // 为合约部署设置合适的gas限制  
+      const data = emitEventData;
 
-    try {
-      // === 步骤: 发送交易 ===  
-      const txHash = await provider.send("eth_sendRawTransaction", [signedTx]);
-      console.log("交易已发送，哈希:", txHash);
-      expect(txHash).to.equal(rawTxHash);
+      // === 步骤: 创建签名交易 ===  
+      const { signedTx, rawTxHash } = createTransaction(
+        TransactionType.Eip2930,
+        chainId,
+        nonce,
+        feeData,
+        gasLimit,
+        from,
+        to,
+        value,
+        data,
+        wallet
+      );
 
-      // === 步骤: 等待交易确认 ===  
-      const receipt = await provider.waitForTransaction(txHash);
+      try {
+        // === 步骤: 发送交易 ===  
+        const txHash = await provider.send("eth_sendRawTransaction", [signedTx]);
+        console.log("交易已发送，哈希:", txHash);
+        expect(txHash).to.equal(rawTxHash);
 
-      // console.debug("交易已经执行，回执:", receipt);
-      // console.debug("回执 logs:", receipt.logs);
+        // === 步骤: 等待交易确认 ===  
+        const receipt = await provider.waitForTransaction(txHash);
 
-      expect(1).to.equal(receipt.status);
-      contractAddress = receipt.contractAddress;
+        // console.debug("交易已经执行，回执:", receipt);
+        // console.debug("回执 logs:", receipt.logs);
 
-      // 校验from字段
-      expect(receipt.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
+        expect(1).to.equal(receipt.status);
+        contractAddress = receipt.contractAddress;
 
-      await handleTxOk(txHash, accountAddress, provider);
+        // 校验from字段
+        expect(receipt.from.toLowerCase()).to.equal(accountAddress.toLowerCase());
 
-    } catch (error) {
+        await handleTxOk(txHash, accountAddress, provider);
 
-      if (error instanceof AssertionError) {
-        throw error
+      } catch (error) {
+
+        if (error instanceof AssertionError) {
+          throw error
+        }
+
+        await handleTxError(rawTxHash, accountAddress, error, provider);
       }
-
-      await handleTxError(rawTxHash, accountAddress, error, provider);
     }
   });
+
   /*
 
   describe("测试用例: nonce 字段", function () {
