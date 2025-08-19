@@ -83,13 +83,16 @@ describe("EIP1599 Transaction 测试集", async function () {
 
     // === 步骤: 交易参数 ===  
     const chainId = parseInt(await provider.send('eth_chainId', []), 16);
-    const nonce = await provider.getTransactionCount(accountAddress);
+    // const nonce = await provider.getTransactionCount(accountAddress, "pending");
+    const nonce = await provider.send("eth_getTransactionCount", [accountAddress, "pending"]);
+
     const feeData = await provider.getFeeData();
     const from = accountAddress;
     const to = null; // 合约部署，to为null 
     const value = 0; // 不发送ETH  
     const gasLimit = 22000000n; // 为合约部署设置合适的gas限制  
     const bytecode = contractArtifact.bytecode;  // 获取合约字节码 
+
 
     // === 步骤: 创建签名交易 ===  
     const { signedTx, rawTxHash } = createTransaction(
@@ -148,7 +151,9 @@ describe("EIP1599 Transaction 测试集", async function () {
     // loop for 10 times
     for (let i = 0; i < 5; i++) {
 
-      const nonce = await provider.getTransactionCount(accountAddress);
+      const nonce = await provider.send("eth_getTransactionCount", [accountAddress, "pending"]);
+      console.log(" ### ===> nonce", nonce);
+
       // === 步骤: 创建签名交易 ===  
       const { signedTx, rawTxHash } = createTransaction(
         TransactionType.Eip1559,

@@ -81,7 +81,7 @@ describe("Legacy Raw Transaction 测试集", async function () {
 
     // === 步骤: 交易参数 ===  
     const chainId = parseInt(await provider.send('eth_chainId', []), 16);
-    const nonce = await provider.getTransactionCount(accountAddress);
+    const nonce = await provider.send("eth_getTransactionCount", [accountAddress, "pending"]);
     const feeData = await provider.getFeeData();
     const from = accountAddress;
     const to = null; // 合约部署，to为null 
@@ -147,7 +147,7 @@ describe("Legacy Raw Transaction 测试集", async function () {
     // loop for 10 times
     for (let i = 0; i < 5; i++) {
 
-      const nonce = await provider.getTransactionCount(accountAddress);
+      const nonce = await provider.send("eth_getTransactionCount", [accountAddress, "pending"]);
       // === 步骤: 创建签名交易 ===  
       const { signedTx, rawTxHash } = createTransaction(
         TransactionType.LegacyTx,

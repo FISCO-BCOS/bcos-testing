@@ -84,7 +84,7 @@ describe("EIP2930 Transaction 测试集", async function () {
 
     // === 步骤: 交易参数 ===  
     const chainId = parseInt(await provider.send('eth_chainId', []), 16);
-    const nonce = await provider.getTransactionCount(accountAddress);
+    const nonce = await provider.send("eth_getTransactionCount", [accountAddress, "pending"]);
     const feeData = await provider.getFeeData();
     const from = accountAddress;
     const to = null; // 合约部署，to为null 
@@ -138,14 +138,12 @@ describe("EIP2930 Transaction 测试集", async function () {
   // 部署合约测试
   it("调用合约接口", async function () {
 
-    const nonce = await provider.getTransactionCount(accountAddress);
-
     const chainId = parseInt(await provider.send('eth_chainId', []), 16);
 
     // loop for 10 times
     for (let i = 0; i < 5; i++) {
 
-      const nonce = await provider.getTransactionCount(accountAddress);
+      const nonce = await provider.send("eth_getTransactionCount", [accountAddress, "pending"]);
       const feeData = await provider.getFeeData();
       const from = accountAddress;
       const to = contractAddress; // 合约部署，to为null 
