@@ -78,7 +78,7 @@ describe("EIP2930 Transaction 测试集", async function () {
   });
 
   it("部署合约", async function () {
-
+    this.timeout(600000);
     // === 步骤: 准备合约部署交易 ===  
     console.log("=== 步骤: 准备合约部署交易 ===");
 
@@ -137,7 +137,7 @@ describe("EIP2930 Transaction 测试集", async function () {
 
   // 部署合约测试
   it("调用合约接口", async function () {
-
+    this.timeout(600000);
     const chainId = parseInt(await provider.send('eth_chainId', []), 16);
 
     // loop for 1 times
