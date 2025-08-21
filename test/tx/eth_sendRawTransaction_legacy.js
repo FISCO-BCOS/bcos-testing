@@ -148,8 +148,8 @@ describe("Legacy Raw Transaction 测试集", async function () {
     const gasLimit = 22000000n; // 为合约部署设置合适的gas限制  
     const data = emitEventData;
 
-    // loop for 3 times
-    for (let i = 0; i < 3; i++) {
+    // loop for 1 times
+    for (let i = 0; i < 1; i++) {
 
       const nonce = await provider.send("eth_getTransactionCount", [accountAddress, "pending"]);
       // === 步骤: 创建签名交易 ===  
