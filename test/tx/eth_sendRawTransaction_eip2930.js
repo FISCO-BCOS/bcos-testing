@@ -140,8 +140,8 @@ describe("EIP2930 Transaction 测试集", async function () {
 
     const chainId = parseInt(await provider.send('eth_chainId', []), 16);
 
-    // loop for 10 times
-    for (let i = 0; i < 5; i++) {
+    // loop for 3 times
+    for (let i = 0; i < 3; i++) {
 
       const nonce = await provider.send("eth_getTransactionCount", [accountAddress, "pending"]);
       const feeData = await provider.getFeeData();

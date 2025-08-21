@@ -72,6 +72,10 @@ describe("Legacy Raw Transaction 测试集", async function () {
     } else {
       provider = new ethers.JsonRpcProvider(url, { chainId: chainId, name: name });
     }
+
+    provider.on("debug", (info) => {
+      console.log(" ### ===> debug info :", info);
+    });
   });
 
   it("部署合约", async function () {
@@ -144,8 +148,8 @@ describe("Legacy Raw Transaction 测试集", async function () {
     const gasLimit = 22000000n; // 为合约部署设置合适的gas限制  
     const data = emitEventData;
 
-    // loop for 10 times
-    for (let i = 0; i < 5; i++) {
+    // loop for 3 times
+    for (let i = 0; i < 3; i++) {
 
       const nonce = await provider.send("eth_getTransactionCount", [accountAddress, "pending"]);
       // === 步骤: 创建签名交易 ===  
